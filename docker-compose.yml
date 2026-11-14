@@ -1,0 +1,33 @@
+# Runs customcbot and Ollama together:  docker compose up
+# Then open http://localhost:8765
+#
+# There is no login. The port is bound to this computer only; do not expose it
+# to a network you do not trust.
+services:
+  ollama:
+    image: ollama/ollama
+    volumes:
+      - ollama:/root/.ollama
+    # To use an NVIDIA graphics card, install the NVIDIA Container Toolkit and uncomment:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  customcbot:
+    build: .
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - data:/data
+    depends_on:
+      - ollama
+
+volumes:
+  ollama:
+  data:
