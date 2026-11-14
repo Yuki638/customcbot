@@ -15,7 +15,7 @@ import numpy as np
 from .. import db
 from .embeddings import Embedder
 
-_STOPWORDS = frozenset(
+STOPWORDS = frozenset(
     "a an and are as at be but by can do does for from how i in is it its me my of on or so "
     "that the their them then there these this to was what when where which who why will with "
     "you your about explain tell describe define give".split()
@@ -24,8 +24,8 @@ _RRF_K = 60
 # A passage whose similarity is under this share of the best match's is left out,
 # unless it is one of the top exact-word matches. Irrelevant passages slow a small
 # model down and confuse it.
-_RELATIVE_CUTOFF = 0.5
-_KEYWORD_KEEP = 5
+_RELATIVE_CUTOFF = 0.65
+_KEYWORD_KEEP = 3
 
 _cache: dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 _cache_lock = threading.Lock()
@@ -67,8 +67,14 @@ def _vector_ranking(collection_id, query, embedder, source_ids, limit) -> list[t
     return [(int(ids[i]), float(scores[i])) for i in order if np.isfinite(scores[i])]
 
 
+def best_match(collection_id: int, query: str, embedder: Embedder, source_ids=None) -> float:
+    """How closely the nearest passage matches a query by meaning (0 when there is none)."""
+    ranking = _vector_ranking(collection_id, query, embedder, source_ids, 1)
+    return ranking[0][1] if ranking else 0.0
+
+
 def _keyword_ranking(collection_id, query, source_ids, limit) -> list[int]:
-    words = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 1 and w not in _STOPWORDS]
+    words = [w for w in re.findall(r"\w+", query.lower()) if len(w) > 1 and w not in STOPWORDS]
     if not words:
         return []
     match = " OR ".join(f'"{w}"' for w in dict.fromkeys(words[:24]))

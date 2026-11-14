@@ -24,8 +24,46 @@ Passages from it appear in the message as numbered sources.
 NO_SOURCES_SYSTEM = """You are a patient tutor. The user has not added any material yet, \
 so answer from your general knowledge, clearly and simply."""
 
-CONDENSE_SYSTEM = """Rewrite the user's last message as one self-contained question, using the \
-conversation for context. Keep the original language. Reply with only the rewritten question."""
+CONDENSE_SYSTEM = """You make the last message of a conversation understandable on its own. \
+Reply with JSON:
+
+- "topic": what the conversation so far is about, in a few words.
+- "needs_topic": true if the last message cannot be understood without the conversation (it says \
+"it", "that", "the next one", or leaves out its subject). false if it makes sense alone or starts \
+a new subject.
+- "question": if needs_topic is true, the last message rewritten as one short question that names \
+what is meant. Otherwise the last message, unchanged.
+
+Never add facts from the conversation to the question. Never answer it. Keep the language of the \
+last message."""
+
+# Worked examples for the rewriting step. Small models follow examples far better than rules.
+CONDENSE_EXAMPLES = [
+    (
+        "User: What is photosynthesis?\n"
+        "Tutor: Photosynthesis is how plants make glucose from light, water and carbon dioxide.\n"
+        "Last message: Where does it happen?",
+        {'topic': 'photosynthesis', 'needs_topic': True, 'question': 'Where does photosynthesis happen?'},
+    ),
+    (
+        "User: When did the French Revolution begin?\n"
+        "Tutor: The French Revolution began in 1789 with the storming of the Bastille.\n"
+        "Last message: What is the boiling point of water?",
+        {'topic': 'the French Revolution', 'needs_topic': False, 'question': 'What is the boiling point of water?'},
+    ),
+    (
+        "User: What is the first step of the water cycle?\n"
+        "Tutor: The first step is evaporation: the sun heats water and it turns into vapour.\n"
+        "Last message: and the next one?",
+        {'topic': 'the steps of the water cycle, evaporation', 'needs_topic': True, 'question': 'What is the step after evaporation in the water cycle?'},
+    ),
+    (
+        "User: How does a vaccine train the immune system?\n"
+        "Tutor: A vaccine shows the immune system a harmless piece of a germ so it can make antibodies.\n"
+        "Last message: explain that more simply",
+        {'topic': 'how a vaccine trains the immune system', 'needs_topic': True, 'question': 'Explain more simply how a vaccine trains the immune system.'},
+    ),
+]
 
 SUMMARY_MAP_SYSTEM = """You take study notes. List the key points of the passage as short bullet \
 points. Keep definitions, formulas, names, dates and numbers. Use only what the passage says. \
@@ -79,10 +117,12 @@ flashcards on its most important facts or ideas.
 
 
 # Repeated right after the question: small models follow the last instruction best.
+# Tested wording. An example sentence here gets copied into answers by a 1B model, and
+# without "in a few sentences" it lists every source instead of answering.
 GROUNDED_REMINDER = (
-    "Answer using only the sources above. End each sentence with the number of the source "
-    "it came from, in square brackets. Do not begin with \"According to\". If the sources do "
-    "not contain the answer, say that you could not find it in the material, and stop."
+    "Answer the question in a few sentences, using only the sources above. Put the source "
+    "number in square brackets after each fact. If the sources do not contain the answer, say "
+    "that you could not find it in the material, and stop."
 )
 
 

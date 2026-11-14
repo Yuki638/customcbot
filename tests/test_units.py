@@ -178,3 +178,23 @@ def test_quiz_questions_do_not_mention_the_passage():
     assert _tidy("What is the purpose of fermentation, according to the passage?") == "What is the purpose of fermentation?"
     assert _tidy("Which enzyme is described in the text as controlling the rate?").startswith("Which enzyme is described")
     assert _tidy("What is ATP?") == "What is ATP?"
+
+
+def test_audio_is_decoded_to_mono_16khz(tmp_path):
+    import math
+    import struct
+    import wave
+
+    from customcbot.ingest import media
+
+    path = tmp_path / "tone.wav"
+    with wave.open(str(path), "wb") as wav:
+        wav.setnchannels(2)
+        wav.setsampwidth(2)
+        wav.setframerate(44100)
+        frames = (int(12000 * math.sin(i / 20)) for i in range(44100 * 2))  # two seconds
+        wav.writeframes(b"".join(struct.pack("<hh", v, v) for v in frames))
+    samples = media.decode_audio(path)
+    assert samples.dtype.name == "float32" and samples.ndim == 1
+    assert abs(len(samples) - 2 * media.SAMPLE_RATE) < 200
+    assert 0.2 < float(abs(samples).max()) <= 1.0

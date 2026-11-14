@@ -6,7 +6,37 @@ import threading
 from collections.abc import Callable
 from pathlib import Path
 
+import numpy as np
+
 from .chunking import Unit
+
+SAMPLE_RATE = 16000  # what the speech-to-text model expects
+
+
+class MediaError(Exception):
+    """A problem with an audio or video file, worded for the end user."""
+
+
+def decode_audio(path: Path) -> np.ndarray:
+    """Read the sound of any audio or video file as mono 16 kHz samples.
+
+    This is done here rather than by faster-whisper, whose own reader passes an
+    option that newer PyAV releases no longer accept.
+    """
+    import av
+
+    resampler = av.AudioResampler(format="s16", layout="mono", rate=SAMPLE_RATE)
+    pieces: list[np.ndarray] = []
+    with av.open(str(path)) as container:
+        stream = next((s for s in container.streams if s.type == "audio"), None)
+        if stream is None:
+            raise MediaError("This file has no sound to transcribe.")
+        for frame in container.decode(stream):
+            pieces.extend(out.to_ndarray().reshape(-1) for out in resampler.resample(frame))
+        pieces.extend(out.to_ndarray().reshape(-1) for out in resampler.resample(None))
+    if not pieces:
+        raise MediaError("This file has no sound to transcribe.")
+    return np.concatenate(pieces).astype(np.float32) / 32768.0
 
 _models: dict[str, object] = {}
 _lock = threading.Lock()
@@ -26,7 +56,8 @@ def transcribe(
             )
         model = _models[model_size]
 
-    segments, info = model.transcribe(str(path), vad_filter=True)
+    progress("Reading the audio", 0.0)
+    segments, info = model.transcribe(decode_audio(path), vad_filter=True)
     duration = info.duration or 0
     units: list[Unit] = []
     for segment in segments:

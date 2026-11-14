@@ -22,6 +22,7 @@ dependencies = [
     "youtube-transcript-api>=1.0",
     "rapidocr-onnxruntime>=1.4",
     "faster-whisper>=1.1",
+    "av>=12",
     "yt-dlp>=2025.1.1",
 ]
 

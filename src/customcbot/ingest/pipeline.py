@@ -64,7 +64,7 @@ def process_source(source_id: int, services: Services) -> None:
             "UPDATE sources SET status = 'ready', stage = NULL, progress = 1, note = ? WHERE id = ?",
             (note, source_id),
         )
-    except (IngestError, youtube.YouTubeError) as exc:
+    except (IngestError, youtube.YouTubeError, media.MediaError) as exc:
         _fail(source_id, str(exc))
     except Exception as exc:  # any reader can fail on a damaged file
         _fail(source_id, f"Could not read this source ({type(exc).__name__}: {exc})"[:400])

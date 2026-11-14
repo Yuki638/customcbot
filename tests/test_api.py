@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 from customcbot.ingest import youtube
 from customcbot.ingest.chunking import Unit
 
@@ -178,10 +180,35 @@ def test_follow_up_question_is_rewritten_before_searching(client, collection):
     llm = client.app.state.services.llm
     chat_id, *_ = ask(client, collection, "What are mitochondria?")
     calls_after_first = len(llm.calls)
-    ask(client, collection, "And why are they folded?", chat_id=chat_id)
+    ask(client, collection, "And why so?", chat_id=chat_id)
     assert len(llm.calls) - calls_after_first == 2  # one rewrite, one answer
     rewrite_prompt = llm.calls[calls_after_first]["messages"][0]["content"]
-    assert "self-contained" in rewrite_prompt
+    assert "understandable on its own" in rewrite_prompt
+
+
+def test_rewrite_is_used_only_when_it_keeps_the_question(services):
+    from customcbot.llm.fake import FakeLLM
+    from customcbot.rag import chat
+
+    history = [
+        {"role": "user", "content": "Where does glycolysis take place?"},
+        {"role": "assistant", "content": "In the cytoplasm [1]."},
+    ]
+
+    def rewrite_with(reply: dict, question: str) -> str:
+        services.llm = FakeLLM(responder=lambda messages, schema, images: json.dumps(reply))
+        return chat.standalone_question(question, history, services)
+
+    good = {"topic": "glycolysis", "needs_topic": True, "question": "What is the next stage after glycolysis?"}
+    assert rewrite_with(good, "And the next stage?") == good["question"]
+    # The model says the question stands alone: it is left as it was.
+    assert rewrite_with({**good, "needs_topic": False}, "And the next stage?") == "And the next stage?"
+    # The model returned the previous question instead of the new one.
+    swapped = {**good, "question": "Where does glycolysis take place?"}
+    assert rewrite_with(swapped, "What does pepsin do?") == "What does pepsin do?"
+    # The conversation was stuffed into the question.
+    stuffed = {**good, "question": "And the next stage, " + "considering what was said before " * 5 + "?"}
+    assert rewrite_with(stuffed, "And the next stage?") == "And the next stage?"
 
 
 def test_empty_collection_asks_for_material(client, collection):
