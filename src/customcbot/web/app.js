@@ -3,7 +3,7 @@
 import { html, render, useEffect, useState } from '/vendor/preact-htm.js';
 import { api } from '/api.js';
 import { ChatTab } from '/components/chat.js';
-import { Settings, Setup } from '/components/setup.js';
+import { describeMode, Settings, Setup } from '/components/setup.js';
 import { SourcesPane } from '/components/sources.js';
 import { FlashcardsTab, QuizTab, SummaryTab } from '/components/study.js';
 import { Dialog, toast, ToastHost } from '/components/ui.js';
@@ -82,7 +82,10 @@ function Main({ status, refresh, onChangeModel }) {
               <span class="name">${collection.name}</span>
             </button>`)}
         </div>
-        <button class="nav-item" onClick=${() => setShowSettings(true)}><span class="name">Settings</span></button>
+        <button class="nav-item two-line" onClick=${() => setShowSettings(true)} title="Where answers come from. Open Settings to change it.">
+          <span class="name">Settings</span>
+          <span class="muted small">${describeMode(status)}</span>
+        </button>
       </nav>
 
       <div class="main">
