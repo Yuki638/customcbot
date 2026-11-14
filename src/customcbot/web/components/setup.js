@@ -132,14 +132,12 @@ export function Settings({ status, onClose, onChangeModel, refresh }) {
 
   const save = async () => {
     try {
-      await api.put('/api/settings', {
-        values: {
-          num_ctx: Number(numCtx),
-          context_chars: Number(numCtx) >= 8192 ? 9000 : 5000,
-          whisper_model: whisper,
-          ollama_url: url,
-        },
-      });
+      const values = { whisper_model: whisper, ollama_url: url };
+      if (Number(numCtx) !== settings.num_ctx) {
+        values.num_ctx = Number(numCtx);
+        values.context_chars = Number(numCtx) >= 8192 ? 9000 : 5000;
+      }
+      await api.put('/api/settings', { values });
       await refresh();
       toast('Settings saved.');
       onClose();

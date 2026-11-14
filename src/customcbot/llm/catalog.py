@@ -20,6 +20,7 @@ class Tier:
     whisper_model: str  # speech-to-text size for videos without captions
     num_ctx: int  # how much text the model sees at once, in tokens
     context_chars: int  # how much retrieved material goes into each answer
+    max_passages: int  # fewer passages keeps small models focused and fast
     download_gb: float
     min_ram_gb: int
     blurb: str
@@ -36,7 +37,8 @@ TIERS: list[Tier] = [
         vision_model=None,
         whisper_model="tiny",
         num_ctx=4096,
-        context_chars=5000,
+        context_chars=3600,
+        max_passages=4,
         download_gb=0.8,
         min_ram_gb=4,
         blurb="For older or low-memory computers. Fast, simpler answers. "
@@ -50,6 +52,7 @@ TIERS: list[Tier] = [
         whisper_model="base",
         num_ctx=8192,
         context_chars=9000,
+        max_passages=6,
         download_gb=3.4,
         min_ram_gb=8,
         blurb="For most laptops with 8 GB of memory or more. "
@@ -63,6 +66,7 @@ TIERS: list[Tier] = [
         whisper_model="small",
         num_ctx=8192,
         context_chars=12000,
+        max_passages=8,
         download_gb=8.2,
         min_ram_gb=16,
         blurb="For computers with 16 GB of memory and a graphics card or Apple Silicon. "
@@ -100,4 +104,5 @@ def settings_for(tier: Tier, hw: Hardware) -> dict:
         "whisper_model": tier.whisper_model,
         "num_ctx": num_ctx,
         "context_chars": context_chars,
+        "max_passages": tier.max_passages,
     }

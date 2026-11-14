@@ -49,6 +49,7 @@ def test_text_file_is_indexed_and_answered_with_citation(client, collection):
     assert "[1]" in text
     assert events[-1][0] == "done"
     assert events[-1][1]["citations"][0]["n"] == 1
+    assert events[-1][1]["content"] == text.strip()
 
     messages = client.get(f"/api/chats/{chat_id}/messages").json()
     assert [m["role"] for m in messages] == ["user", "assistant"]
@@ -259,10 +260,18 @@ def test_quiz_generation_and_grading(client, collection):
 
     short = next(q for q in quiz["questions"] if q["type"] == "short")
     graded = client.post(
-        f"/api/quizzes/{quiz['id']}/grade", json={"question_id": short["id"], "answer": "ATP"}
+        f"/api/quizzes/{quiz['id']}/grade", json={"question_id": short["id"], "answer": short["answer"]}
     ).json()
     assert graded["correct"] is True and graded["answer"] == short["answer"]
     assert client.post(f"/api/quizzes/{quiz['id']}/grade", json={"question_id": mcq["id"], "answer": "x"}).status_code == 400
+    assert len(mcq["options"]) == 4 and mcq["options"][mcq["answer_index"]] == "Sample correct answer"
+
+    # An answer unrelated to the reference is marked wrong without consulting the model.
+    calls = len(client.app.state.services.llm.calls)
+    nonsense = client.post(
+        f"/api/quizzes/{quiz['id']}/grade", json={"question_id": short["id"], "answer": "bananas"}
+    ).json()
+    assert nonsense["correct"] is False and len(client.app.state.services.llm.calls) == calls
 
     client.post(f"/api/quizzes/{quiz['id']}/score", json={"score": 0.75})
     client.post(f"/api/quizzes/{quiz['id']}/score", json={"score": 0.5})

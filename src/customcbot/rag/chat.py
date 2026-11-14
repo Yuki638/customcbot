@@ -10,12 +10,14 @@ from typing import TYPE_CHECKING
 from .. import config, db
 from ..ingest import youtube
 from ..llm.base import LLMError
+from . import citations as citation_check
 from . import prompts, retrieve
 
 if TYPE_CHECKING:
     from ..services import Services
 
-HISTORY_MESSAGES = 4
+HISTORY_MESSAGES = 4  # used to understand a follow-up question
+PROMPT_HISTORY = 2  # the last exchange is repeated to the model when it answers
 HISTORY_CHARS = 600
 NOTHING_YET = (
     "There is nothing to search yet. Add a PDF, a video link or some notes on the left, "
@@ -97,18 +99,21 @@ def answer(
         yield "sources", {"citations": []}
         yield "token", {"text": NOTHING_YET}
         _save(chat_id, NOTHING_YET, [])
-        yield "done", {"citations": []}
+        yield "done", {"content": NOTHING_YET, "citations": []}
         return
 
     passages: list[dict] = []
     if has_material:
-        search_query = standalone_question(question, history, services)
+        # A follow-up like "and the next stage?" is rewritten to stand on its own for
+        # searching. The user's own words are searched too, so that a poor rewrite by
+        # a small model cannot push the right passages out.
         passages = retrieve.search(
             collection_id,
-            search_query,
+            [question, standalone_question(question, history, services)],
             services.embedder,
             source_ids=source_ids,
             budget_chars=int(config.get("context_chars") or 5000),
+            max_chunks=int(config.get("max_passages") or 6),
         )
     citations = [citation_for(n, p) for n, p in enumerate(passages, start=1)]
     yield "sources", {"citations": citations}
@@ -123,7 +128,9 @@ def answer(
         user = f"Sources:\n\n(no matching passages were found)\n\nQuestion: {question}"
 
     messages = [{"role": "system", "content": system}]
-    messages += [{"role": m["role"], "content": m["content"][:HISTORY_CHARS]} for m in history]
+    messages += [
+        {"role": m["role"], "content": m["content"][:HISTORY_CHARS]} for m in history[-PROMPT_HISTORY:]
+    ]
     messages.append({"role": "user", "content": user})
 
     parts: list[str] = []
@@ -136,7 +143,13 @@ def answer(
             _save(chat_id, "".join(parts), citations)
         yield "error", {"message": str(exc)}
         return
-    yield "done", {"citations": _save(chat_id, "".join(parts), citations)}
+    text = "".join(parts).strip()
+    if passages:
+        try:
+            text = citation_check.repair(text, passages, services.embedder)
+        except Exception:  # checking citations must never lose the answer
+            pass
+    yield "done", {"content": text, "citations": _save(chat_id, text, citations)}
 
 
 _CITE = re.compile(r"\[(?:source\s*)?(\d+(?:\s*,\s*\d+)*)\]", re.I)

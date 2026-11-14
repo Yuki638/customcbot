@@ -21,6 +21,11 @@ _STOPWORDS = frozenset(
     "you your about explain tell describe define give".split()
 )
 _RRF_K = 60
+# A passage whose similarity is under this share of the best match's is left out,
+# unless it is one of the top exact-word matches. Irrelevant passages slow a small
+# model down and confuse it.
+_RELATIVE_CUTOFF = 0.5
+_KEYWORD_KEEP = 5
 
 _cache: dict[int, tuple[np.ndarray, np.ndarray, np.ndarray]] = {}
 _cache_lock = threading.Lock()
@@ -51,7 +56,7 @@ def _index(collection_id: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     return ids, source_ids, matrix
 
 
-def _vector_ranking(collection_id, query, embedder, source_ids, limit) -> list[int]:
+def _vector_ranking(collection_id, query, embedder, source_ids, limit) -> list[tuple[int, float]]:
     ids, chunk_sources, matrix = _index(collection_id)
     if len(ids) == 0:
         return []
@@ -59,7 +64,7 @@ def _vector_ranking(collection_id, query, embedder, source_ids, limit) -> list[i
     if source_ids:
         scores = np.where(np.isin(chunk_sources, list(source_ids)), scores, -np.inf)
     order = np.argsort(-scores)[:limit]
-    return [int(ids[i]) for i in order if np.isfinite(scores[i])]
+    return [(int(ids[i]), float(scores[i])) for i in order if np.isfinite(scores[i])]
 
 
 def _keyword_ranking(collection_id, query, source_ids, limit) -> list[int]:
@@ -82,23 +87,32 @@ def _keyword_ranking(collection_id, query, source_ids, limit) -> list[int]:
 
 def search(
     collection_id: int,
-    query: str,
+    queries: str | list[str],
     embedder: Embedder,
     *,
     source_ids: list[int] | None = None,
     budget_chars: int = 5000,
     max_chunks: int = 8,
 ) -> list[dict]:
-    """Return the best passages, most relevant first, within a size budget."""
-    rankings = [
-        _vector_ranking(collection_id, query, embedder, source_ids, 30),
-        _keyword_ranking(collection_id, query, source_ids, 30),
-    ]
+    """Return the best passages, most relevant first, within a size budget.
+
+    Several phrasings of the same question can be given (the user's words and a
+    rewritten follow-up); a passage only needs to match one of them well.
+    """
+    if isinstance(queries, str):
+        queries = [queries]
     fused: dict[int, float] = {}
-    for ranking in rankings:
-        for rank, chunk_id in enumerate(ranking):
-            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (_RRF_K + rank + 1)
-    ordered = sorted(fused, key=fused.get, reverse=True)[: max_chunks * 2]
+    relevant: set[int] = set()
+    for query in dict.fromkeys(q.strip() for q in queries if q.strip()):
+        by_meaning = _vector_ranking(collection_id, query, embedder, source_ids, 30)
+        by_words = _keyword_ranking(collection_id, query, source_ids, 30)
+        for ranking in ([chunk_id for chunk_id, _ in by_meaning], by_words):
+            for rank, chunk_id in enumerate(ranking):
+                fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (_RRF_K + rank + 1)
+        best = by_meaning[0][1] if by_meaning else 0.0
+        relevant.update(c for c, score in by_meaning if score >= best * _RELATIVE_CUTOFF)
+        relevant.update(by_words[:_KEYWORD_KEEP])
+    ordered = [c for c in sorted(fused, key=fused.get, reverse=True) if c in relevant][: max_chunks * 2]
     if not ordered:
         return []
 

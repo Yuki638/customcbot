@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
@@ -20,9 +21,11 @@ MIN_PASSAGE_CHARS = 250
 
 
 class MultipleChoice(BaseModel):
+    # The model names the right answer in words. Asking it for the position of the
+    # right answer in a list is unreliable with small models.
     question: str
-    options: list[str]
-    correct_index: int
+    correct_answer: str
+    wrong_answers: list[str]
     explanation: str
 
 
@@ -69,21 +72,34 @@ def _multiple_choice(passage: dict, services: Services) -> dict | None:
         max_tokens=400,
         background=True,
     )
-    options = [o.strip() for o in result.options if o.strip()]
-    if len(options) < 2 or not 0 <= result.correct_index < len(options):
+    correct = result.correct_answer.strip()
+    wrong = list(dict.fromkeys(w.strip() for w in result.wrong_answers if w.strip()))
+    wrong = [w for w in wrong if w.lower() != correct.lower()][:3]
+    if not correct or not wrong or not result.question.strip():
         return None
-    if len({o.lower() for o in options}) != len(options) or not result.question.strip():
-        return None
-    # Models tend to put the right answer first; shuffle so position gives nothing away.
-    correct = options[result.correct_index]
+    options = [correct, *wrong]
     random.shuffle(options)
     return {
         "type": "mcq",
-        "question": result.question.strip(),
+        "question": _tidy(result.question),
         "options": options,
         "answer_index": options.index(correct),
         "explanation": result.explanation.strip(),
     }
+
+
+_PASSAGE_PHRASE = re.compile(
+    r",?\s*\b(?:according to|based on|as (?:stated|described|mentioned) in|in|from)"
+    r" the (?:passage|text|notes|source|sources|document)\b,?",
+    re.I,
+)
+
+
+def _tidy(question: str) -> str:
+    """Remove "according to the passage": the student does not see a passage."""
+    cleaned = _PASSAGE_PHRASE.sub("", question).strip()
+    cleaned = re.sub(r"\s+([?.,])", r"\1", re.sub(r"\s{2,}", " ", cleaned))
+    return cleaned[:1].upper() + cleaned[1:] if cleaned else question.strip()
 
 
 def _short_answer(passage: dict, services: Services) -> dict | None:
@@ -99,7 +115,7 @@ def _short_answer(passage: dict, services: Services) -> dict | None:
     )
     if not result.question.strip() or not result.answer.strip():
         return None
-    return {"type": "short", "question": result.question.strip(), "answer": result.answer.strip()}
+    return {"type": "short", "question": _tidy(result.question), "answer": result.answer.strip()}
 
 
 def job_generate(job: dict, params: dict, services: Services, context: JobContext) -> dict:
@@ -146,6 +162,12 @@ def grade(quiz_id: int, question_id: int, answer: str, services: Services) -> di
     if question is None or question["type"] != "short":
         raise ValueError("That question cannot be graded this way.")
     passage = db.one("SELECT text FROM chunks WHERE id = ?", (question["chunk_id"],))
+    if _unrelated(answer, question, passage, services):
+        return {
+            "correct": False,
+            "feedback": "That does not match the material. Compare it with the reference answer.",
+            "answer": question["answer"],
+        }
     user = (
         f"Question: {question['question']}\n"
         f"Reference answer: {question['answer']}\n"
@@ -159,3 +181,18 @@ def grade(quiz_id: int, question_id: int, answer: str, services: Services) -> di
         max_tokens=200,
     )
     return {"correct": result.correct, "feedback": result.feedback.strip(), "answer": question["answer"]}
+
+
+def _unrelated(answer: str, question: dict, passage: dict | None, services: Services) -> bool:
+    """True when an answer has nothing to do with the reference answer.
+
+    Small models sometimes praise nonsense. An answer that shares no words with
+    the reference or the passage, and is far from the reference in meaning, is
+    marked wrong without asking the model.
+    """
+    words = set(re.findall(r"\w{4,}", answer.lower()))
+    known = set(re.findall(r"\w{4,}", f"{question['answer']} {passage['text'] if passage else ''}".lower()))
+    if words & known:
+        return False
+    vectors = services.embedder.embed([answer, question["answer"]])
+    return float(vectors[0] @ vectors[1]) < 0.2

@@ -143,3 +143,38 @@ def test_standard_tier_uses_small_context_on_8gb():
     standard = catalog.get_tier("standard")
     assert catalog.settings_for(standard, _hw(7.7))["num_ctx"] == 4096
     assert catalog.settings_for(standard, _hw(16))["num_ctx"] == 8192
+
+
+def test_wrong_citation_numbers_are_corrected():
+    from customcbot.rag import citations
+    from customcbot.rag.embeddings import FakeEmbedder
+
+    passages = [
+        {"text": "Glycolysis takes place in the cytoplasm and produces two ATP molecules."},
+        {"text": "Julius Caesar was assassinated on the Ides of March by senators led by Brutus."},
+        {"text": "The Krebs cycle happens in the matrix of the mitochondria."},
+    ]
+    fix = lambda text: citations.repair(text, passages, FakeEmbedder())  # noqa: E731
+
+    # The right fact with the wrong number is renumbered.
+    assert fix("Caesar was assassinated on the Ides of March by senators led by Brutus. [3]").endswith("Brutus. [2]")
+    # A correct citation is left alone, including the "[Source n]" spelling.
+    assert fix("Glycolysis takes place in the cytoplasm. [Source 1]").endswith("cytoplasm. [1]")
+    # Each sentence is judged on its own.
+    both = fix("Glycolysis produces two ATP molecules [2]. The Krebs cycle happens in the mitochondria matrix [2].")
+    assert "molecules [1]" in both and "matrix [3]" in both
+    # A number that does not exist is replaced by the passage that supports the claim.
+    assert fix("The Krebs cycle happens in the matrix of the mitochondria [9].").endswith("mitochondria [3].")
+    # A claim nothing supports loses its made-up number.
+    assert "[" not in fix("Bananas are an excellent source of potassium for athletes [7].")
+    # Text without citations is returned unchanged.
+    assert fix("No citations here.") == "No citations here."
+
+
+def test_quiz_questions_do_not_mention_the_passage():
+    from customcbot.study.quiz import _tidy
+
+    assert _tidy("According to the passage, what does glycolysis produce?") == "What does glycolysis produce?"
+    assert _tidy("What is the purpose of fermentation, according to the passage?") == "What is the purpose of fermentation?"
+    assert _tidy("Which enzyme is described in the text as controlling the rate?").startswith("Which enzyme is described")
+    assert _tidy("What is ATP?") == "What is ATP?"

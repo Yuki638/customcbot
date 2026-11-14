@@ -18,6 +18,7 @@ DEFAULTS: dict[str, Any] = {
     "whisper_model": "base",
     "num_ctx": 4096,
     "context_chars": 5000,
+    "max_passages": 6,
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "ollama_url": None,
     "setup_done": False,

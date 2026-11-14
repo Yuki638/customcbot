@@ -98,7 +98,7 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
       await streamChat(id, { content: question, source_ids: sourceIds, general }, (event, data) => {
         if (event === 'sources') updateLast(() => ({ citations: data.citations }));
         else if (event === 'token') updateLast((last) => ({ content: last.content + data.text }));
-        else if (event === 'done') updateLast(() => ({ citations: data.citations, pending: false }));
+        else if (event === 'done') updateLast((last) => ({ content: data.content ?? last.content, citations: data.citations, pending: false }));
         else if (event === 'error') updateLast(() => ({ error: data.message, pending: false }));
       }, abort.current.signal);
     } catch (error) {
