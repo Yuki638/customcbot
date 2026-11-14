@@ -13,6 +13,7 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from . import db
+from .llm import base as llm_base
 
 if TYPE_CHECKING:
     from .services import Services
@@ -129,6 +130,9 @@ class Worker:
             return
         db.execute("UPDATE jobs SET status = 'running', progress = 0 WHERE id = ?", (job_id,))
         context = JobContext(job_id, self)
+        llm_base.set_notice_hook(
+            lambda text: db.execute("UPDATE jobs SET stage = ? WHERE id = ?", (text, job_id))
+        )
         try:
             context.progress("Starting", 0.0)
             result = handler(job, json.loads(job["params"]), self.services, context)
@@ -144,4 +148,5 @@ class Worker:
                 (str(exc)[:400] or type(exc).__name__, job_id),
             )
         finally:
+            llm_base.set_notice_hook(None)
             self.cancelled.discard(job_id)

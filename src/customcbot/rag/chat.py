@@ -160,13 +160,14 @@ def answer(
         rewritten, show = _resolve_follow_up(collection_id, question, history, services, source_ids)
         if show:
             meant = rewritten
+        budget_chars, max_chunks = config.passage_budget()
         passages = retrieve.search(
             collection_id,
             [question, rewritten],
             services.embedder,
             source_ids=source_ids,
-            budget_chars=int(config.get("context_chars") or 5000),
-            max_chunks=int(config.get("max_passages") or 6),
+            budget_chars=budget_chars,
+            max_chunks=max_chunks,
         )
     citations = [citation_for(n, p) for n, p in enumerate(passages, start=1)]
     yield "sources", {"citations": citations}

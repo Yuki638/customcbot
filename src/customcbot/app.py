@@ -16,6 +16,8 @@ from .api import chat, collections, setup, study
 from .llm import hardware
 from .llm.fake import FakeLLM
 from .llm.ollama import OllamaLLM
+from .llm.openai_compat import OpenAICompatLLM
+from .llm.router import SwitchLLM
 from .rag.embeddings import FakeEmbedder, FastEmbedder
 from .services import Services
 from .study import flashcards, quiz, summary
@@ -28,7 +30,12 @@ def build_services() -> Services:
     if os.environ.get("CUSTOMCBOT_FAKE") == "1":
         return Services(llm=FakeLLM(), embedder=FakeEmbedder(), hardware=hw, fake=True)
     embedder = FastEmbedder(config.get("embedding_model"), str(config.models_dir() / "embeddings"))
-    return Services(llm=OllamaLLM(config.get_all, config.ollama_url), embedder=embedder, hardware=hw)
+    llm = SwitchLLM(
+        OllamaLLM(config.get_all, config.ollama_url),
+        OpenAICompatLLM(config.get_all, config.api_key),
+        config.online,
+    )
+    return Services(llm=llm, embedder=embedder, hardware=hw)
 
 
 def create_app(services: Services | None = None) -> FastAPI:

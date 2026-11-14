@@ -22,7 +22,19 @@ DEFAULTS: dict[str, Any] = {
     "embedding_model": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
     "ollama_url": None,
     "setup_done": False,
+    # Where answers come from: "local" (Ollama on this computer) or "online"
+    # (a hosted service that speaks the OpenAI chat API).
+    "provider": "local",
+    "online_service": None,  # id of a preset in llm/catalog.py, or "custom"
+    "api_base_url": None,
+    "api_key": None,
+    "api_model": None,
+    "api_vision": False,  # whether the online model can read images
 }
+
+# Hosted models read far more text at once than a small local model.
+ONLINE_CONTEXT_CHARS = 12000
+ONLINE_MAX_PASSAGES = 8
 
 
 def data_dir() -> Path:
@@ -49,6 +61,30 @@ def ollama_url() -> str:
     if not url.startswith("http"):
         url = "http://" + url
     return url.rstrip("/")
+
+
+def online() -> bool:
+    return get("provider") == "online"
+
+
+def api_key() -> str | None:
+    """The key for the online service: saved in Settings, or from the environment."""
+    return get("api_key") or os.environ.get("CUSTOMCBOT_API_KEY") or None
+
+
+def passage_budget() -> tuple[int, int]:
+    """(characters of material, number of passages) to send with each question."""
+    if online():
+        return ONLINE_CONTEXT_CHARS, ONLINE_MAX_PASSAGES
+    return int(get("context_chars") or 5000), int(get("max_passages") or 6)
+
+
+def public() -> dict[str, Any]:
+    """All settings, safe to send to the browser: the key itself never leaves the server."""
+    values = get_all()
+    del values["api_key"]
+    values["api_key_saved"] = bool(api_key())
+    return values
 
 
 def get(key: str) -> Any:

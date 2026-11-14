@@ -65,6 +65,12 @@ CONDENSE_EXAMPLES = [
     ),
 ]
 
+# Added to the request for services that cannot be given a reply format directly.
+JSON_INSTRUCTION = (
+    "Reply with one JSON object only, with no other text before or after it. "
+    "It must match this JSON schema:\n{schema}"
+)
+
 SUMMARY_MAP_SYSTEM = """You take study notes. List the key points of the passage as short bullet \
 points. Keep definitions, formulas, names, dates and numbers. Use only what the passage says. \
 Write in the language of the passage."""

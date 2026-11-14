@@ -20,6 +20,26 @@ class LLMError(RuntimeError):
     """The model backend failed or returned something unusable."""
 
 
+_notice = threading.local()
+
+
+def set_notice_hook(hook) -> None:
+    """Let the current thread hear short status notes from the backend (None to stop).
+
+    The background worker uses this to show "waiting for the rate limit" on a job.
+    """
+    _notice.hook = hook
+
+
+def notify(text: str) -> None:
+    hook = getattr(_notice, "hook", None)
+    if hook is not None:
+        try:
+            hook(text)
+        except Exception:  # a status note must never break the request
+            pass
+
+
 class _Gate:
     """Lets interactive requests (chat) go ahead of background work.
 

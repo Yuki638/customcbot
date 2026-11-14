@@ -1,7 +1,7 @@
-"""Model presets.
+"""Model presets: local model sizes, and online services.
 
-Tags were checked against the Ollama registry in November 2026. To offer a
-different model, change it here; nothing else in the code names a model.
+Local tags were checked against the Ollama registry in November 2026. To offer
+a different model, change it here; nothing else in the code names a model.
 """
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ def get_tier(tier_id: str) -> Tier:
 
 
 def recommend(hw: Hardware) -> str:
-    if hw.ram_gb < 7:
+    if hw.ram_gb < MIN_RAM_FOR_GOOD_LOCAL_GB:
         return "lite"
     if hw.ram_gb >= 15 and hw.gpu_gb >= 8:
         return "plus"
@@ -106,3 +106,145 @@ def settings_for(tier: Tier, hw: Hardware) -> dict:
         "context_chars": context_chars,
         "max_passages": tier.max_passages,
     }
+
+
+# -- online services -------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class OnlineService:
+    """A hosted service that speaks the OpenAI chat API.
+
+    Model names change often, so none is fixed here. The app asks the service
+    for its current list and suggests the first one matching `prefer`.
+    """
+
+    id: str
+    label: str
+    base_url: str | None  # None: the user types the address
+    key_url: str | None  # where to create a free key
+    needs_key: bool
+    prefer: tuple[str, ...]  # parts of model names, best first
+    vision: bool  # whether the suggested models usually read images
+    only_suffix: str | None  # list only models whose name ends like this
+    blurb: str
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+ONLINE_SERVICES: list[OnlineService] = [
+    OnlineService(
+        id="groq",
+        label="Groq",
+        base_url="https://api.groq.com/openai/v1",
+        key_url="https://console.groq.com/keys",
+        needs_key=True,
+        prefer=("llama-3.3-70b", "gpt-oss-120b", "70b", "llama"),
+        vision=False,
+        only_suffix=None,
+        blurb="Very fast answers. Free account, no payment card needed.",
+    ),
+    OnlineService(
+        id="gemini",
+        label="Google Gemini",
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai",
+        key_url="https://aistudio.google.com/apikey",
+        needs_key=True,
+        prefer=("flash-latest", "2.5-flash", "flash"),
+        vision=True,
+        only_suffix=None,
+        blurb="Generous free allowance, and reads handwriting and scanned pages. "
+        "Google may use free-tier requests to improve its products.",
+    ),
+    OnlineService(
+        id="openrouter",
+        label="OpenRouter",
+        base_url="https://openrouter.ai/api/v1",
+        key_url="https://openrouter.ai/keys",
+        needs_key=True,
+        prefer=("llama-3.3-70b", "gemma-3-27b", "70b", "gemma"),
+        vision=False,
+        only_suffix=":free",
+        blurb="One key for many free models from different makers. Lower daily limits.",
+    ),
+    OnlineService(
+        id="cerebras",
+        label="Cerebras",
+        base_url="https://api.cerebras.ai/v1",
+        key_url="https://cloud.cerebras.ai",
+        needs_key=True,
+        prefer=("llama-3.3-70b", "gpt-oss-120b", "70b", "llama"),
+        vision=False,
+        only_suffix=None,
+        blurb="Very fast answers. Free account with a daily allowance.",
+    ),
+    OnlineService(
+        id="mistral",
+        label="Mistral",
+        base_url="https://api.mistral.ai/v1",
+        key_url="https://console.mistral.ai/api-keys",
+        needs_key=True,
+        prefer=("mistral-small-latest", "mistral-small", "small"),
+        vision=False,
+        only_suffix=None,
+        blurb="European service with a free plan. Free-plan requests may be used for training.",
+    ),
+    OnlineService(
+        id="freellmapi",
+        label="FreeLLMAPI on this computer",
+        base_url="http://localhost:3001/v1",
+        key_url="https://github.com/tashfeenahmed/freellmapi",
+        needs_key=True,
+        prefer=("auto",),
+        vision=False,
+        only_suffix=None,
+        blurb="For people who run the FreeLLMAPI router, which spreads requests over many "
+        "free services. Use the key shown in its dashboard.",
+    ),
+    OnlineService(
+        id="custom",
+        label="Another service",
+        base_url=None,
+        key_url=None,
+        needs_key=False,
+        prefer=(),
+        vision=False,
+        only_suffix=None,
+        blurb="Any address that speaks the OpenAI chat API, including LM Studio or "
+        "llama.cpp on your own network.",
+    ),
+]
+
+# Below this much memory only the smallest local model fits, and its answers are
+# poor. The setup wizard then suggests an online service first.
+MIN_RAM_FOR_GOOD_LOCAL_GB = 7
+
+
+def get_service(service_id: str) -> OnlineService:
+    for service in ONLINE_SERVICES:
+        if service.id == service_id:
+            return service
+    raise KeyError(service_id)
+
+
+def recommend_mode(hw: Hardware) -> str:
+    return "online" if hw.ram_gb < MIN_RAM_FOR_GOOD_LOCAL_GB else "local"
+
+
+def usable_models(service: OnlineService, names: list[str]) -> list[str]:
+    """The models worth offering: chat models only, best guess first."""
+    skip = ("embed", "whisper", "tts", "guard", "moderation", "rerank", "imagen", "veo", "image-generation")
+    kept = [n for n in names if not any(word in n.lower() for word in skip)]
+    if service.only_suffix:
+        kept = [n for n in kept if n.endswith(service.only_suffix)] or kept
+    suggested = suggest_model(service, kept)
+    return ([suggested] if suggested else []) + [n for n in kept if n != suggested]
+
+
+def suggest_model(service: OnlineService, names: list[str]) -> str | None:
+    for wanted in service.prefer:
+        for name in names:
+            if wanted in name.lower():
+                return name
+    return names[0] if names else None

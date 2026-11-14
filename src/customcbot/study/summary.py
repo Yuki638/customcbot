@@ -76,7 +76,7 @@ def summarize_source(source_id: int, services: Services, context: JobContext, sh
     if source["summary"]:
         return source["summary"]
     start, span = share
-    size = int(config.get("context_chars") or 5000)
+    size = config.passage_budget()[0]
     texts = [r["text"] for r in db.query("SELECT text FROM chunks WHERE source_id = ? ORDER BY ord", (source_id,))]
     if not texts:
         raise ValueError(f'"{source["title"]}" has no text to summarise yet.')
@@ -114,7 +114,7 @@ def job_summarize_collection(job: dict, params: dict, services: Services, contex
     )
     if not sources:
         raise ValueError("Add some material first.")
-    size = int(config.get("context_chars") or 5000)
+    size = config.passage_budget()[0]
     summaries = []
     for index, source in enumerate(sources):
         share = (0.8 * index / len(sources), 0.8 / len(sources))
