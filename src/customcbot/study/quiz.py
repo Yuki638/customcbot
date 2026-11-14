@@ -35,8 +35,9 @@ class ShortAnswer(BaseModel):
 
 
 class Grade(BaseModel):
-    correct: bool
+    # Feedback comes first so the verdict follows from the model's own reasoning.
     feedback: str
+    correct: bool
 
 
 def sample_passages(collection_id: int, source_ids: list[int] | None, count: int) -> list[dict]:
@@ -162,12 +163,15 @@ def grade(quiz_id: int, question_id: int, answer: str, services: Services) -> di
     if question is None or question["type"] != "short":
         raise ValueError("That question cannot be graded this way.")
     passage = db.one("SELECT text FROM chunks WHERE id = ?", (question["chunk_id"],))
-    if _unrelated(answer, question, passage, services):
+    closeness = _closeness(answer, question, passage, services)
+    if closeness == "unrelated":
         return {
             "correct": False,
             "feedback": "That does not match the material. Compare it with the reference answer.",
             "answer": question["answer"],
         }
+    if closeness == "same":
+        return {"correct": True, "feedback": "That matches the reference answer.", "answer": question["answer"]}
     user = (
         f"Question: {question['question']}\n"
         f"Reference answer: {question['answer']}\n"
@@ -183,16 +187,20 @@ def grade(quiz_id: int, question_id: int, answer: str, services: Services) -> di
     return {"correct": result.correct, "feedback": result.feedback.strip(), "answer": question["answer"]}
 
 
-def _unrelated(answer: str, question: dict, passage: dict | None, services: Services) -> bool:
-    """True when an answer has nothing to do with the reference answer.
+def _closeness(answer: str, question: dict, passage: dict | None, services: Services) -> str:
+    """Settle the obvious cases without the model: "same", "unrelated" or "unclear".
 
-    Small models sometimes praise nonsense. An answer that shares no words with
-    the reference or the passage, and is far from the reference in meaning, is
-    marked wrong without asking the model.
+    Small models sometimes praise nonsense or reject a perfect answer. An answer
+    that says the same as the reference is right; one that shares no words with
+    the reference or the passage and is far from it in meaning is wrong.
+    Everything in between goes to the model.
     """
+    vectors = services.embedder.embed([answer, question["answer"]])
+    similarity = float(vectors[0] @ vectors[1])
+    if similarity >= 0.92:
+        return "same"
     words = set(re.findall(r"\w{4,}", answer.lower()))
     known = set(re.findall(r"\w{4,}", f"{question['answer']} {passage['text'] if passage else ''}".lower()))
-    if words & known:
-        return False
-    vectors = services.embedder.embed([answer, question["answer"]])
-    return float(vectors[0] @ vectors[1]) < 0.2
+    if not words & known and similarity < 0.2:
+        return "unrelated"
+    return "unclear"

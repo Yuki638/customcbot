@@ -263,6 +263,10 @@ def test_quiz_generation_and_grading(client, collection):
         f"/api/quizzes/{quiz['id']}/grade", json={"question_id": short["id"], "answer": short["answer"]}
     ).json()
     assert graded["correct"] is True and graded["answer"] == short["answer"]
+    partly = client.post(
+        f"/api/quizzes/{quiz['id']}/grade", json={"question_id": short["id"], "answer": "Sample, roughly"}
+    ).json()
+    assert partly["correct"] is True and partly["feedback"] == "Sample feedback"  # decided by the model
     assert client.post(f"/api/quizzes/{quiz['id']}/grade", json={"question_id": mcq["id"], "answer": "x"}).status_code == 400
     assert len(mcq["options"]) == 4 and mcq["options"][mcq["answer_index"]] == "Sample correct answer"
 

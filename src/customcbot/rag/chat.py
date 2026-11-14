@@ -121,6 +121,8 @@ def answer(
     if passages:
         system = prompts.GENERAL_SYSTEM if general else prompts.GROUNDED_SYSTEM
         user = f"Sources:\n\n{prompts.format_sources(passages)}\n\nQuestion: {question}"
+        if not general:
+            user += f"\n\n{prompts.GROUNDED_REMINDER}"
     elif general:
         system, user = prompts.NO_SOURCES_SYSTEM, question
     else:

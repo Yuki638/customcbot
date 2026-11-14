@@ -78,6 +78,14 @@ flashcards on its most important facts or ideas.
 - Write in the language of the passage."""
 
 
+# Repeated right after the question: small models follow the last instruction best.
+GROUNDED_REMINDER = (
+    "Answer using only the sources above. End each sentence with the number of the source "
+    "it came from, in square brackets. Do not begin with \"According to\". If the sources do "
+    "not contain the answer, say that you could not find it in the material, and stop."
+)
+
+
 def format_sources(passages: list[dict]) -> str:
     blocks = []
     for number, passage in enumerate(passages, start=1):
