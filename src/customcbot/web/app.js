@@ -6,9 +6,10 @@ import { ChatTab } from '/components/chat.js';
 import { describeMode, Settings, Setup } from '/components/setup.js';
 import { SourcesPane } from '/components/sources.js';
 import { FlashcardsTab, QuizTab, SummaryTab } from '/components/study.js';
+import { NotesTab } from '/components/notes.js';
 import { Dialog, toast, ToastHost } from '/components/ui.js';
 
-const TABS = [['chat', 'Chat'], ['summary', 'Summary'], ['quiz', 'Quiz'], ['flashcards', 'Flashcards']];
+const TABS = [['chat', 'Chat'], ['notes', 'Notes'], ['summary', 'Summary'], ['quiz', 'Quiz'], ['flashcards', 'Flashcards']];
 
 function readHash() {
   const match = window.location.hash.match(/^#\/c\/(\d+)(?:\/(\w+))?/);
@@ -180,6 +181,7 @@ function CollectionView({ collection, tab, go, reloadCollections }) {
     <div class=${`workspace tab-${tab}`}>
       <${SourcesPane} collectionId=${collection.id} sources=${sources} reload=${reload} excluded=${excluded} setExcluded=${setExcluded} />
       ${tab === 'summary' ? html`<${SummaryTab} ...${props} />`
+        : tab === 'notes' ? html`<${NotesTab} ...${props} />`
         : tab === 'quiz' ? html`<${QuizTab} ...${props} />`
         : tab === 'flashcards' ? html`<${FlashcardsTab} ...${props} />`
         : html`<${ChatTab} ...${props} />`}

@@ -127,7 +127,7 @@ export function JobProgress({ task, label }) {
         <button class="btn small" onClick=${task.cancel}>Cancel</button>
       </div>
       <${Progress} value=${job.progress} busy=${job.status === 'queued'} />
-      <span class="muted small">This runs on your computer, so it can take a few minutes. You can keep using the other tabs.</span>
+      <span class="muted small">This can take a few minutes. You can keep using the other tabs.</span>
     </div>
   `;
 }

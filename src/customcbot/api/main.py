@@ -25,12 +25,20 @@ from .routers import (
     collections,
     commands,
     credentials,
+    insights,
     models,
+    notes,
     settings,
     setup,
     sources,
     study,
+    transformations,
 )
+
+ROUTERS = (
+    setup, settings, credentials, models, collections, sources, notes, transformations, insights,
+    chat, study, commands,
+)  # fmt: skip
 
 WEB_DIR = Path(__file__).parent.parent / "web"
 
@@ -63,7 +71,7 @@ def create_app(services: Services | None = None) -> FastAPI:
     async def typed_error(request: Request, exc: CustomcbotError) -> JSONResponse:
         return JSONResponse({"detail": exc.message}, status_code=exc.status_code)
 
-    for module in (setup, settings, credentials, models, collections, sources, chat, study, commands):
+    for module in ROUTERS:
         app.include_router(module.router)
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

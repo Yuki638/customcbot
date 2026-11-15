@@ -15,6 +15,7 @@ from ..database.repository import (
     repo_one,
     repo_query,
 )
+from ..domain import Source, SourceInsight, Transformation
 from ..utils.prompter import render
 
 if TYPE_CHECKING:
@@ -105,8 +106,21 @@ def summarize_source(source_id: int, services: Services, context: JobContext, sh
     return summary
 
 
+def _keep_as_insight(source_id: int, content: str, services: Services) -> None:
+    """A study guide is also kept as an insight, so it can be searched and saved as a note."""
+    from .transformation import STUDY_GUIDE, save_insight  # here: that module builds on this one
+
+    guide = Transformation.where("builtin = ?", (STUDY_GUIDE,))
+    if not guide:
+        return
+    existing = SourceInsight.where("source_id = ? AND transformation_id = ?", (source_id, guide[0].id))
+    if not existing or existing[0].content != content.strip():
+        save_insight(Source.get(source_id), guide[0], content, services)
+
+
 def job_summarize_source(job: dict, params: dict, services: Services, context: JobContext) -> dict:
-    summarize_source(int(params["source_id"]), services, context)
+    content = summarize_source(int(params["source_id"]), services, context)
+    _keep_as_insight(int(params["source_id"]), content, services)
     return {"source_id": params["source_id"]}
 
 
@@ -124,6 +138,7 @@ def job_summarize_collection(job: dict, params: dict, services: Services, contex
     for index, source in enumerate(sources):
         share = (0.8 * index / len(sources), 0.8 / len(sources))
         summary = summarize_source(source["id"], services, context, share)
+        _keep_as_insight(source["id"], summary, services)
         summaries.append(f'From "{source["title"]}":\n{summary}')
     if len(sources) == 1:
         overview = summaries[0].split("\n", 1)[1]

@@ -17,14 +17,14 @@ A "chat with your own material" app: FastAPI backend in `src/customcbot`, a no-b
 The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a lighter stack (SQLite, one process, no build step). All paths are under `src/customcbot/`.
 
 - `api/`: `main.py` builds the app, `middleware.py` checks each request, `routers/` has one file per resource, `command_service.py` submits and reads background jobs.
-- `domain/`: stored objects (`Collection`, `Source`, `ChatSession`, `Credential`, `Model`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record such as `DefaultModels`.
+- `domain/`: stored objects (`Collection`, `Source`, `Note`, `Transformation`, `SourceInsight`, `ChatSession`, `Credential`, `Model`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record such as `DefaultModels`.
 - `database/`: `repository.py` (`repo_query`, `repo_one`, `repo_execute`), `migrate.py` and numbered files in `migrations/` (`.sql`, or `.py` with `upgrade(conn)` to move data), hybrid search in `search.py`.
 - `ai/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the list of kinds of service (`provider_registry.py`), which saved model does which job (`models.py`), ready-made clients per job (`provision.py`), embeddings, stand-in model, hardware detection, model sizes and online services (`catalog.py`).
-- `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `summary.py`, `quiz.py`, `flashcards.py`.
+- `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `transformation.py` (carry out a task on a source and store the insight), `summary.py`, `quiz.py`, `flashcards.py`.
 - `commands/`: background work. `registry.py` has the `@command` decorator, `worker.py` runs commands one at a time.
 - `prompts/`: every instruction sent to the model, as Jinja templates; `utils/prompter.py` renders them.
 - `ingest/`: one module per kind of source (PDF, Office, images, audio and video, YouTube).
-- `utils/`: chunking, citation checking, building the passage text for a prompt.
+- `utils/`: chunking, indexing notes and insights for search, citation checking, building the passage text for a prompt, key encryption.
 - `web/`: the interface. `cli.py` is the entry point.
 
 ## Conventions
@@ -37,6 +37,8 @@ The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a
 - Model names appear only in `ai/catalog.py`. Online services get no fixed model name: the app lists what the service offers and suggests one by pattern.
 - Several services can be saved at once (`credentials`, `models` tables). Code that needs a model asks for it by job: `services.model("chat")`, `"transformation"` (summaries, quizzes, flashcards) or `"vision"`. Never build a client directly.
 - Keys are stored encrypted (`utils/encryption.py`) and must never be returned by an API route. Send `Credential.public()` and `config.public()` to the browser, never `model_dump()` of a credential.
+- A passage (`chunks` row) belongs to a source, a note or an insight. `search.search(..., kinds=...)` chooses which: chat uses sources and notes; insights are searchable but not cited, because they restate the sources.
+- A transformation is a task carried out on one source; its result is an insight. Built-in ones take their wording from `prompts/transformations/<name>.jinja` until the user rewords them.
 - Background LLM calls pass `background=True` so chat stays responsive.
 - Error messages reach end users as written; keep them plain and say what to do next.
 - After changing prompts or retrieval, test against a real small model (`gemma3:1b`), not only the stand-in. Small models are where things break.

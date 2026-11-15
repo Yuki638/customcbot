@@ -269,3 +269,10 @@ details summary { cursor: pointer; color: var(--muted); }
   .workspace:not(.tab-sources) .sources-pane { display: none; }
   .scroll, .messages { padding: 12px; }
 }
+
+/* Notes */
+.note-row { text-align: left; cursor: pointer; width: 100%; font: inherit; color: inherit; }
+.note-row:hover { background: var(--surface-2); }
+.note-row .preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.msg-actions { margin-top: 4px; }
+select.inline { width: auto; max-width: 240px; }

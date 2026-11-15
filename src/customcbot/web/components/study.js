@@ -2,7 +2,7 @@
 
 import { html, useEffect, useState } from '/vendor/preact-htm.js';
 import { api } from '/api.js';
-import { JobProgress, Markdown, toast, useJob } from '/components/ui.js';
+import { Dialog, JobProgress, Markdown, toast, useJob } from '/components/ui.js';
 
 function NeedsMaterial() {
   return html`
@@ -14,17 +14,103 @@ function NeedsMaterial() {
 
 // ---- summary -----------------------------------------------------------
 
+function TasksDialog({ tasks, onClose, onChanged }) {
+  const blank = { title: '', prompt: '', apply_default: false };
+  const [editing, setEditing] = useState(null);  // a task being edited, or `blank` for a new one
+  const [busy, setBusy] = useState(false);
+
+  const run = async (work) => {
+    setBusy(true);
+    try {
+      await work();
+      await onChanged();
+      setEditing(null);
+    } catch (error) {
+      toast(error.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+  const save = () => run(() => {
+    const body = { title: editing.title, description: editing.description || '', prompt: editing.prompt, apply_default: editing.apply_default };
+    return editing.id ? api.put(`/api/transformations/${editing.id}`, body) : api.post('/api/transformations', body);
+  });
+
+  if (editing) {
+    return html`
+      <${Dialog} title=${editing.id ? `Edit "${editing.title}"` : 'New task'} wide onClose=${() => setEditing(null)} footer=${html`
+        ${editing.id && editing.builtin && editing.changed && html`
+          <button class="btn" disabled=${busy} onClick=${() => run(() => api.post(`/api/transformations/${editing.id}/reset`))}>Put back the original wording</button>`}
+        ${editing.id && !editing.builtin && html`
+          <button class="btn danger" disabled=${busy} onClick=${() => window.confirm(`Delete the task "${editing.title}"?`) && run(() => api.del(`/api/transformations/${editing.id}`))}>Delete</button>`}
+        <button class="btn" onClick=${() => setEditing(null)}>Cancel</button>
+        <button class="btn primary" disabled=${busy || !editing.title.trim() || !editing.prompt.trim()} onClick=${save}>Save</button>`}>
+        <label class="field">Name
+          <input type="text" placeholder="For example: Timeline" value=${editing.title} onInput=${(e) => setEditing({ ...editing, title: e.target.value })} />
+        </label>
+        <label class="field">What the AI should do with a source
+          <textarea rows="6" placeholder="For example: List every date in order, with what happened on it."
+            value=${editing.prompt} onInput=${(e) => setEditing({ ...editing, prompt: e.target.value })}></textarea>
+        </label>
+        <label class="row small">
+          <input type="checkbox" checked=${editing.apply_default} onChange=${(e) => setEditing({ ...editing, apply_default: e.target.checked })} />
+          <span>Do this by itself for every new source (it takes time for each one)</span>
+        </label>
+      <//>`;
+  }
+  return html`
+    <${Dialog} title="Tasks" onClose=${onClose} footer=${html`
+      <button class="btn" onClick=${() => setEditing(blank)}>New task</button>
+      <button class="btn primary" onClick=${onClose}>Done</button>`}>
+      <p class="muted small">A task is something the AI does with one source, such as listing its key points. Change the wording, or add your own.</p>
+      ${tasks.map((item) => html`
+        <div class="list-row" key=${item.id}>
+          <span class="grow">
+            <strong>${item.title}</strong>
+            ${item.apply_default && html`${' '}<span class="badge">every new source</span>`}
+            ${item.changed && html`${' '}<span class="badge">reworded</span>`}
+            <span class="muted small" style="display: block">${item.description || item.prompt.slice(0, 90)}</span>
+          </span>
+          <button class="btn small" onClick=${() => setEditing(item)}>Edit</button>
+        </div>`)}
+    <//>`;
+}
+
 export function SummaryTab({ collectionId, readyCount }) {
   const [data, setData] = useState(null);
-  const load = () => api.get(`/api/collections/${collectionId}/summary`).then(setData).catch((error) => toast(error.message));
+  const [insights, setInsights] = useState([]);
+  const [tasks, setTasks] = useState([]);
+  const [chosen, setChosen] = useState({});  // source id -> task id picked in its menu
+  const [managing, setManaging] = useState(false);
+
+  const loadTasks = () => api.get('/api/transformations').then(setTasks).catch((error) => toast(error.message));
+  const load = () => Promise.all([
+    api.get(`/api/collections/${collectionId}/summary`).then(setData),
+    api.get(`/api/collections/${collectionId}/insights`).then(setInsights),
+  ]).catch((error) => toast(error.message));
   useEffect(() => { setData(null); load(); }, [collectionId, readyCount]);
-  const task = useJob(collectionId, ['summary_source', 'summary_collection'], load);
+  useEffect(() => { loadTasks(); }, []);
+  const task = useJob(collectionId, ['summary_source', 'summary_collection', 'run_transformation'], load);
   const path = `/api/collections/${collectionId}/summary`;
+
+  const keep = async (insight) => {
+    try {
+      await api.post(`/api/insights/${insight.id}/save-as-note`);
+      toast('Saved. You will find it in the Notes tab.');
+    } catch (error) {
+      toast(error.message);
+    }
+  };
+  const remove = async (insight) => {
+    if (!window.confirm(`Delete this ${insight.insight_type.toLowerCase()}?`)) return;
+    await api.del(`/api/insights/${insight.id}`).catch((error) => toast(error.message));
+    load();
+  };
 
   if (!readyCount) return html`<div class="tab-body"><div class="scroll"><${NeedsMaterial} /></div></div>`;
   return html`
     <div class="tab-body"><div class="scroll"><div class="narrow stack">
-      <${JobProgress} task=${task} label="Summarising" />
+      <${JobProgress} task=${task} label="Working" />
       <div class="card stack">
         <div class="row">
           <h2 class="grow">Overview of everything</h2>
@@ -36,17 +122,38 @@ export function SummaryTab({ collectionId, readyCount }) {
           ? html`<${Markdown} text=${data.summary} />`
           : html`<p class="muted">A study guide covering all your sources: the key ideas, important terms and questions to test yourself.</p>`}
       </div>
-      <h3>By source</h3>
-      ${data && data.sources.map((source) => html`
-        <div class="card stack" key=${source.id}>
-          <div class="row">
-            <strong class="grow">${source.title}</strong>
-            ${!source.summary && html`
-              <button class="btn small" disabled=${task.active} onClick=${() => task.start(path, { source_id: source.id })}>Summarise</button>`}
-          </div>
-          ${source.summary && html`<details><summary>Show study guide</summary><div style="margin-top: 10px"><${Markdown} text=${source.summary} /></div></details>`}
-        </div>`)}
+      <div class="row">
+        <h3 class="grow">By source</h3>
+        <button class="btn small" onClick=${() => setManaging(true)}>Edit tasks</button>
+      </div>
+      <p class="muted small">Pick what you want for a source and press Make. Results stay here; "Save as note" copies one into your notes.</p>
+      ${data && data.sources.map((source) => {
+        const made = insights.filter((i) => i.source_id === source.id);
+        const picked = chosen[source.id] || (tasks[0] && tasks[0].id);
+        return html`
+          <div class="card stack" key=${source.id}>
+            <div class="row wrap">
+              <strong class="grow">${source.title}</strong>
+              <select class="inline" aria-label=${`What to make from ${source.title}`} value=${String(picked || '')}
+                onChange=${(e) => setChosen({ ...chosen, [source.id]: Number(e.target.value) })}>
+                ${tasks.map((item) => html`<option value=${String(item.id)} key=${item.id}>${item.title}</option>`)}
+              </select>
+              <button class="btn small ${made.length ? '' : 'primary'}" disabled=${task.active || !picked}
+                onClick=${() => task.start(`/api/sources/${source.id}/insights`, { transformation_id: picked })}>Make</button>
+            </div>
+            ${made.map((insight) => html`
+              <details key=${insight.id}>
+                <summary>${insight.insight_type}</summary>
+                <div style="margin-top: 10px"><${Markdown} text=${insight.content} /></div>
+                <div class="row" style="margin-top: 8px">
+                  <button class="btn small" onClick=${() => keep(insight)}>Save as note</button>
+                  <button class="btn small ghost danger" onClick=${() => remove(insight)}>Delete</button>
+                </div>
+              </details>`)}
+          </div>`;
+      })}
     </div></div></div>
+    ${managing && html`<${TasksDialog} tasks=${tasks} onClose=${() => setManaging(false)} onChanged=${loadTasks} />`}
   `;
 }
 

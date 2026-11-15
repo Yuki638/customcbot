@@ -18,6 +18,7 @@ from ..database.repository import (
     repo_one,
     repo_query,
 )
+from ..utils import indexing
 from .registry import get_command
 
 if TYPE_CHECKING:
@@ -107,6 +108,11 @@ class Worker:
         )
 
     def _run(self) -> None:
+        try:
+            # Study guides carried over by an upgrade have no passages yet.
+            indexing.index_missing(self.services.embedder)
+        except Exception:  # the search model may not be downloaded yet; this runs again next start
+            pass
         while True:
             job_id = self._queue.get()
             try:

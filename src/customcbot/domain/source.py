@@ -63,6 +63,10 @@ class Source(ObjectModel):
 
     def delete(self) -> None:
         repo_execute("DELETE FROM chunks WHERE source_id = ?", (self.id,))
+        repo_execute(
+            "DELETE FROM chunks WHERE insight_id IN (SELECT id FROM source_insights WHERE source_id = ?)",
+            (self.id,),
+        )
         super().delete()
         # The collection's overview was written with this source in it.
         repo_execute("UPDATE collections SET summary = NULL WHERE id = ?", (self.collection_id,))

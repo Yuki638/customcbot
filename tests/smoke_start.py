@@ -337,6 +337,24 @@ def use(base: str, service: str) -> None:
         raise SystemExit("No summary was written.")
     say("Summary written")
 
+    # A note, and one task carried out on a source.
+    note = check(client.post(
+        f"/api/collections/{collection}/notes",
+        json={"content": "# Exam\nThe exam on respiration is in room B12. Révision: chapitre 4."},
+    ))
+    if note["title"] != "Exam" or "Révision" not in check(client.get(f"/api/notes/{note['id']}"))["content"]:
+        raise SystemExit(f"The note was not stored as written: {note}")
+    pdf_source = next(s for s in sources if s["kind"] == "pdf")
+    glossary = next(t["id"] for t in check(client.get("/api/transformations")) if t["title"] == "Glossary")
+    finish(check(client.post(f"/api/sources/{pdf_source['id']}/insights", json={"transformation_id": glossary})), "The glossary")
+    insights = check(client.get(f"/api/sources/{pdf_source['id']}/insights"))
+    if "Glossary" not in [i["insight_type"] for i in insights]:
+        raise SystemExit(f"The glossary was not stored: {insights}")
+    kept = check(client.post(f"/api/insights/{insights[-1]['id']}/save-as-note"))
+    if len(check(client.get(f"/api/collections/{collection}/notes"))) != 2 or kept["note_type"] != "ai":
+        raise SystemExit("Saving a result as a note did not work.")
+    say("Note written, glossary made and saved as a note")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

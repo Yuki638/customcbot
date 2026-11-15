@@ -12,6 +12,7 @@ const SUGGESTIONS = [
 ];
 
 function citationLink(citation) {
+  if (citation.kind === 'note' || citation.kind === 'insight') return null;  // shown in full right here
   if (citation.kind === 'youtube' && citation.url) {
     return { href: citation.url, text: citation.start_sec !== null ? `Watch from ${formatTime(citation.start_sec)}` : 'Open the video' };
   }
@@ -28,7 +29,7 @@ export function CitationDialog({ citation, onClose }) {
   return html`
     <${Dialog} title=${citation.label} onClose=${onClose} footer=${link && html`
       <a class="btn primary" href=${link.href} target="_blank" rel="noopener">${link.text}</a>`}>
-      <p class="muted small">This is the passage from your material that the answer used.</p>
+      <p class="muted small">${citation.kind === 'note' ? 'This is the part of your note that the answer used.' : 'This is the passage from your material that the answer used.'}</p>
       <div class="passage">${citation.text}</div>
     <//>
   `;
@@ -125,6 +126,21 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
     localStorage.setItem('customcbot.general', event.target.checked ? '1' : '0');
   };
 
+  // Keep an answer: it becomes a note, titled with the question that was asked.
+  const saveAsNote = async (index) => {
+    const answer = messages[index];
+    const question = messages.slice(0, index).reverse().find((m) => m.role === 'user');
+    try {
+      await api.post(`/api/collections/${collectionId}/notes`, {
+        title: question ? question.content.slice(0, 110) : '', content: answer.content, note_type: 'ai',
+      });
+      setMessages((list) => list.map((m, i) => (i === index ? { ...m, saved: true } : m)));
+      toast('Saved. You will find it in the Notes tab.');
+    } catch (error) {
+      toast(error.message);
+    }
+  };
+
   const onKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
@@ -179,6 +195,12 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
                     <button class="cite-chip" onClick=${() => setOpened(citation)} title=${citation.label}>
                       <span class="n">${citation.n}</span><span class="label">${citation.label}</span>
                     </button>`)}
+                </div>`}
+              ${!message.pending && !message.error && message.content && html`
+                <div class="msg-actions">
+                  <button class="btn ghost small" disabled=${message.saved} onClick=${() => saveAsNote(index)}>
+                    ${message.saved ? 'Saved to Notes' : 'Save as note'}
+                  </button>
                 </div>`}
             </div>`)}
       </div>

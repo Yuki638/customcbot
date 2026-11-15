@@ -11,6 +11,11 @@ def format_sources(passages: list[dict]) -> str:
 
 
 def location_label(passage: dict) -> str:
+    """Where a passage comes from, as shown to the model and in a citation."""
+    if passage.get("kind") == "note":
+        return f"Your note: {passage['title']}"
+    if passage.get("kind") == "insight":
+        return f"{passage.get('insight_type') or 'Insight'} of {passage['title']}"
     label = passage["title"]
     if passage.get("start_sec") is not None:
         label += f", at {format_time(passage['start_sec'])}"

@@ -49,6 +49,8 @@ def citation_for(number: int, passage: dict) -> dict:
         "n": number,
         "chunk_id": passage["id"],
         "source_id": passage["source_id"],
+        "note_id": passage.get("note_id"),
+        "insight_id": passage.get("insight_id"),
         "title": passage["title"],
         "kind": passage["kind"],
         "page": passage["page"],
