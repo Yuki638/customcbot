@@ -1,0 +1,14 @@
+The episode: "{{ title }}". {{ briefing }}
+
+This part: {{ segment_title }}
+Points to cover:
+{% for point in points -%}
+- {{ point }}
+{% endfor %}
+{% if previous -%}
+The part before ended with: "{{ previous }}"
+
+{% endif -%}
+Material:
+
+{{ material }}

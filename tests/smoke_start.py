@@ -382,6 +382,16 @@ def use(base: str, service: str) -> None:
         raise SystemExit(f"A chat about one source looked elsewhere: {cited}")
     say(f"Search found {len(found)} passages; Ask and a chat about one source answered")
 
+    # A podcast episode, spoken by the real offline voices (downloaded here, about 350 MB).
+    overview = next(p["id"] for p in check(client.get("/api/episode-profiles")) if p["name"] == "Quick overview")
+    began = time.time()
+    finish(check(client.post(f"/api/collections/{collection}/podcasts", json={"episode_profile_id": overview})), "The podcast")
+    episode = check(client.get(f"/api/collections/{collection}/podcasts"))[0]
+    sound = client.get(f"/api/podcasts/{episode['id']}/audio")
+    if episode["status"] != "ready" or not episode["duration_sec"] or sound.status_code != 200 or len(sound.content) < 2000:
+        raise SystemExit(f"The podcast was not recorded: {episode}, {sound.status_code}, {len(sound.content)} bytes")
+    say(f"Podcast recorded: {episode['duration_sec']} s of speech, {len(sound.content) // 1024} KB, in {time.time() - began:.0f} s")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

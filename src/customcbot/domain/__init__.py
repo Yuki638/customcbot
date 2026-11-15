@@ -6,6 +6,7 @@ from .collection import Collection
 from .credential import Credential
 from .model import DefaultModels, Model
 from .note import Note
+from .podcast import EpisodeProfile, PodcastEpisode, SpeakerProfile
 from .source import Source
 from .transformation import SourceInsight, Transformation
 
@@ -14,11 +15,14 @@ __all__ = [
     "Collection",
     "Credential",
     "DefaultModels",
+    "EpisodeProfile",
     "Model",
     "Note",
     "ObjectModel",
+    "PodcastEpisode",
     "RecordModel",
     "Source",
     "SourceInsight",
+    "SpeakerProfile",
     "Transformation",
 ]

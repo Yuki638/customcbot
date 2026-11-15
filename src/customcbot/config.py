@@ -55,6 +55,12 @@ def models_dir() -> Path:
     return path
 
 
+def podcasts_dir() -> Path:
+    path = data_dir() / "podcasts"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
 def ollama_url() -> str:
     url = get("ollama_url") or os.environ.get("OLLAMA_HOST") or "http://127.0.0.1:11434"
     if not url.startswith("http"):

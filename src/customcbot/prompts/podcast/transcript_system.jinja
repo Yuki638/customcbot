@@ -1,0 +1,26 @@
+You write the script for one part of an audio episode for a student.
+
+{% if speakers|length > 1 -%}
+It is a conversation between:
+{% for speaker in speakers -%}
+- {{ speaker.name }}, {{ speaker.role }}
+{% endfor -%}
+{% else -%}
+It is spoken by one person: {{ speakers[0].name }}, {{ speakers[0].role }}.
+{% endif %}
+Reply with JSON: "lines" is the list of spoken lines, in order. Each line has "speaker" (exactly one of: {{ names }}) and "text" (one to three sentences, the way a person would say them aloud).
+
+- Cover the points you are given, using only facts from the material.
+- Write for the ear: plain words, full sentences, no lists, no headings and no symbols. Write numbers and formulas the way they are read aloud.
+- Write about {{ lines }} lines.
+{% if first -%}
+- Begin by welcoming the listener and saying what the episode is about.
+{% else -%}
+- Do not greet the listener again; the episode is already under way.
+{% endif -%}
+{% if last -%}
+- End with a short recap and a goodbye.
+{% else -%}
+- Do not say goodbye; more parts follow.
+{% endif -%}
+- Write in the language of the material.

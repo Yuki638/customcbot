@@ -7,10 +7,11 @@ import { describeMode, Settings, Setup } from '/components/setup.js';
 import { SourcesPane } from '/components/sources.js';
 import { FlashcardsTab, QuizTab, SummaryTab } from '/components/study.js';
 import { NotesTab } from '/components/notes.js';
+import { PodcastTab } from '/components/podcasts.js';
 import { SearchTab } from '/components/search.js';
 import { Dialog, toast, ToastHost } from '/components/ui.js';
 
-const TABS = [['chat', 'Chat'], ['search', 'Search'], ['notes', 'Notes'], ['summary', 'Summary'], ['quiz', 'Quiz'], ['flashcards', 'Flashcards']];
+const TABS = [['chat', 'Chat'], ['search', 'Search'], ['notes', 'Notes'], ['summary', 'Summary'], ['quiz', 'Quiz'], ['flashcards', 'Flashcards'], ['podcast', 'Podcast']];
 
 function readHash() {
   const match = window.location.hash.match(/^#\/c\/(\d+)(?:\/(\w+))?/);
@@ -184,6 +185,7 @@ function CollectionView({ collection, tab, go, reloadCollections }) {
       ${tab === 'summary' ? html`<${SummaryTab} ...${props} />`
         : tab === 'notes' ? html`<${NotesTab} ...${props} />`
         : tab === 'search' ? html`<${SearchTab} ...${props} />`
+        : tab === 'podcast' ? html`<${PodcastTab} ...${props} />`
         : tab === 'quiz' ? html`<${QuizTab} ...${props} />`
         : tab === 'flashcards' ? html`<${FlashcardsTab} ...${props} />`
         : html`<${ChatTab} ...${props} />`}

@@ -44,5 +44,10 @@ class Collection(ObjectModel):
         for source in repo_query("SELECT id FROM sources WHERE collection_id = ?", (self.id,)):
             shutil.rmtree(config.files_dir() / str(source["id"]), ignore_errors=True)
         repo_execute("DELETE FROM chunks WHERE collection_id = ?", (self.id,))
+        for episode in repo_query(
+            "SELECT audio_path FROM podcast_episodes WHERE collection_id = ? AND audio_path IS NOT NULL",
+            (self.id,),
+        ):
+            (config.podcasts_dir() / episode["audio_path"]).unlink(missing_ok=True)
         super().delete()
         search.invalidate(self.id)

@@ -23,6 +23,7 @@ The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a
 - `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `ask.py` (plan searches, take notes from each, write one answer), `transformation.py` (carry out a task on a source and store the insight), `summary.py`, `quiz.py`, `flashcards.py`.
 - `commands/`: background work. `registry.py` has the `@command` decorator, `worker.py` runs commands one at a time.
 - `prompts/`: every instruction sent to the model, as Jinja templates; `utils/prompter.py` renders them.
+- `podcasts/`: turning material into a spoken episode: `generate.py` (plan, script, record), `speech.py` (offline Kokoro voices; `FakeSpeech` for tests), `audio.py` (join lines, save MP3), `voices.py`.
 - `ingest/`: one module per kind of source (PDF, Office, images, audio and video, YouTube).
 - `utils/`: chunking, indexing notes and insights for search, citation checking, building the passage text for a prompt, key encryption.
 - `web/`: the interface. `cli.py` is the entry point.
