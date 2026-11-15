@@ -83,3 +83,18 @@ def test_a_stolen_cookie_from_an_old_password_is_useless(client):
     old = auth.session_token()
     set_password(client, "second-one", current="first-one")
     assert not auth.signed_in(old) and auth.signed_in(auth.session_token())
+
+
+def test_a_forgotten_password_can_be_removed_from_the_command_line(client, monkeypatch):
+    import sys
+
+    import uvicorn
+
+    from customcbot import cli
+
+    set_password(client, "long-forgotten")
+    assert auth.required()
+    monkeypatch.setattr(uvicorn, "run", lambda *args, **kwargs: None)  # do not actually serve
+    monkeypatch.setattr(sys, "argv", ["customcbot", "--reset-password", "--no-browser"])
+    cli.main()
+    assert not auth.required()

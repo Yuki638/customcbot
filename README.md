@@ -19,13 +19,21 @@ You choose on first start and can switch at any time.
 - **Quizzes.** Multiple choice or written answers, drawn from across your material, with explanations.
 - **Flashcards.** Written for you, with spaced repetition so the cards you miss come back sooner.
 - **Collections.** Keep each subject or project separate: 5 PDFs and 10 lectures for one course, a manual and some notes for another.
+- **Notes.** Write your own, or keep an answer with "Save as note". Answers can use and cite your notes.
+- **Tasks on a source.** Key points, a glossary, revision questions or a plain-language explanation of any source, or tasks you write yourself.
+- **Search and Ask in depth.** Find passages by exact words or by meaning. For a harder question, the AI plans several searches, takes notes from each and writes one answer.
+- **Podcasts.** Turn your material into a spoken episode with one to four voices, to listen to instead of reading. The voices run on your computer.
+- **Several AI services at once.** Use one model for chat, another for quizzes and summaries, and a third to read handwriting.
+- **Six interface languages**, and an optional password if you open the app to other devices.
 
 It is built for studying but works for anything you want to ask questions about: manuals, reports, meeting recordings, research papers.
 
 | | |
 |---|---|
 | ![A quiz question with its explanation](docs/quiz.png) | ![A flashcard](docs/flashcards.png) |
-| ![A study guide written from a collection](docs/summary.png) | ![The text read from a photographed note](docs/extracted-text.png) |
+| ![A glossary made from one source](docs/summary.png) | ![The text read from a photographed note](docs/extracted-text.png) |
+| ![An answer built from several searches](docs/ask.png) | ![A podcast episode with its script](docs/podcast.png) |
+| ![Notes, including a saved answer](docs/notes.png) | ![A model for each kind of work](docs/models.png) |
 
 ## Get started
 
@@ -127,6 +135,10 @@ Small models running on a home computer are slower and less capable than large o
 
 **With an online service**, the question you ask and the passages found for it are also sent to the service you chose, each time you chat or make a summary, quiz or flashcards. Your key is stored in the data folder on your computer and is never shown again in the browser.
 
+**Podcast voices** run on your computer in both cases: the script is written by the AI you chose, but the speech is made locally and no audio is sent anywhere.
+
+**Saved keys** are encrypted in the data folder. **A password** is optional; set one in Settings if other devices can reach the app.
+
 There is no account and no tracking in customcbot itself. The data folder is shown in the terminal when the app starts. Delete that folder to remove everything.
 
 ## Troubleshooting
@@ -140,6 +152,8 @@ There is no account and no tracking in customcbot itself. The data folder is sho
 | "The free allowance ... is used up for now" | Wait a while, pick another model in Settings, or switch to a local model. |
 | A YouTube link fails | Check the video is public. If you are on a VPN, turn it off and press "Try again". |
 | `start.sh` says "permission denied" | Run `chmod +x start.sh` once, then try again. |
+| "The voices could not be set up" | The first podcast downloads the voices (about 350 MB). Check your connection and press Make episode again. |
+| You forgot the password | Stop the app and start it once with `--reset-password` (for example `./start.sh --reset-password`). That removes the password; your data is kept. |
 
 ## How it works
 
@@ -157,8 +171,11 @@ Summaries, quizzes and flashcards use the same passages.
 | Language and vision model | [Ollama](https://ollama.com) running Gemma 3, or any service that speaks the OpenAI chat API |
 | Search by meaning | [fastembed](https://github.com/qdrant/fastembed) with a multilingual MiniLM model, on the CPU |
 | Storage and keyword search | One SQLite file |
-| PDFs, OCR, speech | pypdfium2, RapidOCR, faster-whisper |
+| PDFs, OCR, speech to text | pypdfium2, RapidOCR, faster-whisper |
+| Podcast voices | [Kokoro](https://huggingface.co/hexgrad/Kokoro-82M) through kokoro-onnx, on the CPU |
 | Server and interface | FastAPI; Preact with no build step |
+
+The way the code is organised (routes, domain models, numbered migrations, model provisioning per job, workflows, background commands, prompt templates) follows [open-notebook](https://github.com/lfnovo/open-notebook), as do notes, transformations, Ask and podcasts. customcbot rebuilds those ideas on a lighter stack so that it starts with one double-click and runs on a modest computer; no code was copied. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## For developers
 
@@ -212,4 +229,4 @@ customcbot is a single-user app with no login. Do not put it on the public inter
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE). Bundled browser libraries are listed in [`src/customcbot/web/vendor/README.md`](src/customcbot/web/vendor/README.md).
+MIT. See [LICENSE](LICENSE). The podcast voices depend on espeak-ng, which is installed as a separate package under the GPL-3.0 licence. Bundled browser libraries are listed in [`src/customcbot/web/vendor/README.md`](src/customcbot/web/vendor/README.md).

@@ -160,6 +160,24 @@ Open the **Chat** tab, type your question in the box at the bottom, and press En
 
 The AI can still make mistakes. For anything important, open the citation and check.
 
+### Keep an answer, or ask about one source
+
+- **Save as note** under an answer copies it into the **Notes** tab, titled with your question.
+- **Ask** next to a source on the left opens a chat that looks only in that source. A short source is read whole, so nothing in it is missed.
+
+### Search tab
+
+- **Find passages** looks through your sources, your notes and the results in the Summary tab. Choose **Words and meaning**, **Exact words only** or **Similar meaning only**, and tick what to look in. Click a result to read the passage.
+- **Ask in depth** is for a question that needs more than one passage, such as a comparison. The AI plans a few searches, takes notes from each (open a step to read them), then writes one answer with numbered sources. It is slower than Chat. With the Lite local model it does a single search.
+
+![An answer built from several searches](ask.png)
+
+### Notes tab
+
+**New note** opens an editor; Markdown works (`# heading`, `- list`, `**bold**`). A note without a title is named after its first line. Notes are searched together with your sources, so answers in Chat can use them and cite them as "Your note: …". Answers and results you saved are marked **saved answer**.
+
+![Notes](notes.png)
+
 ## 6. Summaries, quizzes and flashcards
 
 All three are made from the sources ticked on the left. They run in the background, so you can keep using the other tabs while you wait.
@@ -167,9 +185,10 @@ All three are made from the sources ticked on the left. They run in the backgrou
 ### Summary tab
 
 - **Write overview** writes one study guide covering all your sources: an overview, key ideas, important terms and questions to test yourself.
-- Under **By source**, **Summarise** writes a study guide for a single source. **Show study guide** opens it again later.
+- Under **By source**, pick a task for a source and press **Make**. Five tasks are ready: **Study guide**, **Key points**, **Glossary**, **Revision questions** and **Explain it simply**. Click a result's name to open it. **Save as note** copies it into your notes; **Delete** removes it.
+- **Edit tasks** lets you change the wording of a task, put a built-in one back to its original wording, add your own (for example "List every date in order with what happened"), or tick **Do this by itself for every new source**.
 
-![A study guide](summary.png)
+![A glossary made from one source](summary.png)
 
 ### Quiz tab
 
@@ -192,6 +211,20 @@ Cards you know come back after longer and longer gaps. Cards you miss come back 
 
 ![A flashcard](flashcards.png)
 
+### Podcast tab
+
+Turns your material into a spoken episode you can listen to.
+
+1. Choose a **Kind of episode**: **Study recap** (two voices talk through the key ideas), **Quick overview** (one voice, shorter) or **Exam drill** (questions and answers).
+2. Optionally type what to focus on, then press **Make episode**.
+3. When it is ready, press play, **Download MP3**, or **Read the script**.
+
+The first episode downloads the voices (about 350 MB, once). After that an episode of about four minutes takes one to two minutes with an online model, and around five minutes with a local model on a laptop. The script is written by the AI you chose; the voices run on your computer, so no audio is sent anywhere.
+
+**Kinds and voices** lets you change who speaks (one to four speakers, each with a name, a voice and a short description) and what an episode should be like. The English voices are the best tested; Spanish, French, Hindi, Italian and Portuguese voices are included.
+
+![A podcast episode with its script](podcast.png)
+
 ## 7. Change the model or switch between local and online
 
 Click **Settings** at the bottom left. The line under it always shows where answers currently come from.
@@ -201,6 +234,17 @@ Click **Settings** at the bottom left. The line under it always shows where answ
 - **Speech-to-text quality:** Fastest, Balanced or Most accurate, for videos without captions and audio files.
 
 Your collections and sources are unaffected by switching.
+
+### Several services, and a model for each kind of work
+
+**Services and models** in Settings is for when one model is not enough. Under **Which model does what** you can give different work to different models: answering questions; summaries, quizzes and flashcards; reading handwriting and scanned pages. A common choice is a fast model for chat and a larger one for quizzes, or an online model that reads images next to a local one for everything else. **Add a service** saves another service and its key; **Add a model** lists what that service offers and tests the one you pick before saving it. Keys are stored encrypted and are never shown again.
+
+![A model for each kind of work](models.png)
+
+### Language and password
+
+- **Language of the interface:** English, Español, Français, Português, हिन्दी or 中文. The translations were made by machine and have not been checked by native speakers. What the AI writes follows the language of your material and your questions, not this setting.
+- **Password:** not needed while only this computer can open the app. If you start it for other devices (`--host 0.0.0.0`), press **Set a password**; every device then has to sign in. If you forget it, stop the app and start it once with `--reset-password`.
 
 ## 8. Your data: where it is, backup, removal
 

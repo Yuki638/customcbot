@@ -34,6 +34,9 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-browser", action="store_true", help="do not open the browser")
     parser.add_argument("--version", action="version", version=__version__)
+    parser.add_argument(
+        "--reset-password", action="store_true", help="remove the password set in Settings, then start"
+    )
     args = parser.parse_args()
 
     import uvicorn
@@ -41,6 +44,10 @@ def main() -> None:
     from .api.main import create_app
 
     app = create_app()
+    if args.reset_password:
+        # For a forgotten password. Whoever can start the app on this computer owns the data anyway.
+        config.set_many({"password_hash": None})
+        print("\n  The password has been removed.")
     port = _free_port(args.host, args.port)
     shown_host = "localhost" if args.host in ("127.0.0.1", "0.0.0.0") else args.host
     url = f"http://{shown_host}:{port}"
