@@ -139,6 +139,14 @@ GROUNDED_REMINDER = (
     "that you could not find it in the material, and stop."
 )
 
+# Hosted models are far larger: they can be asked for a fuller answer, and do not
+# need to be held to a few sentences to stay on the question.
+GROUNDED_REMINDER_ONLINE = (
+    "Answer the question using only the sources above, with enough detail to be useful for "
+    "studying. Put the source number in square brackets, like [1], after each fact. If the "
+    "sources do not contain the answer, say that you could not find it in the material, and stop."
+)
+
 
 def format_sources(passages: list[dict]) -> str:
     blocks = []

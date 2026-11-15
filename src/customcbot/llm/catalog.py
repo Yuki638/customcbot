@@ -234,7 +234,11 @@ def recommend_mode(hw: Hardware) -> str:
 
 def usable_models(service: OnlineService, names: list[str]) -> list[str]:
     """The models worth offering: chat models only, best guess first."""
-    skip = ("embed", "whisper", "tts", "guard", "moderation", "rerank", "imagen", "veo", "image-generation")
+    # Speech, safety-filter, embedding and image models cannot hold a conversation.
+    skip = (
+        "embed", "whisper", "tts", "orpheus", "speech", "guard", "moderation",
+        "rerank", "imagen", "veo", "image-generation",
+    )  # fmt: skip
     kept = [n for n in names if not any(word in n.lower() for word in skip)]
     if service.only_suffix:
         kept = [n for n in kept if n.endswith(service.only_suffix)] or kept

@@ -227,3 +227,20 @@ def test_structured_requests_ask_for_plain_quotes():
     llm.chat_json(original, Answer)
     assert "plain straight quotes" in llm.calls[0]["messages"][-1]["content"]
     assert original[0]["content"] == "Give a number."  # the caller's messages are left alone
+
+
+def test_other_citation_styles_become_plain_brackets():
+    from customcbot.rag import citations
+
+    # Seen with gpt-oss on Groq.
+    assert citations.normalise("It is in the matrix\u30102\u3011.") == "It is in the matrix[2]."
+    assert citations.normalise("Two ATP \u30101\u2020L4-L9\u3011 are made.") == "Two ATP [1] are made."
+    assert citations.normalise("See \u30101, 3\u3011 and [2].") == "See [1, 3] and [2]."
+    assert citations.plain_brackets("\u3010") == "["  # works on a single streamed fragment
+
+
+def test_speech_and_filter_models_are_not_offered_for_chat():
+    names = ["canopylabs/orpheus-v1-english", "openai/gpt-oss-120b", "meta-llama/llama-prompt-guard-2-86m",
+             "whisper-large-v3", "openai/gpt-oss-safeguard-20b", "qwen/qwen3.8-27b"]
+    offered = catalog.usable_models(catalog.get_service("groq"), names)
+    assert offered == ["openai/gpt-oss-120b", "qwen/qwen3.8-27b"]

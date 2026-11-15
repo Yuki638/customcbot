@@ -176,7 +176,8 @@ def answer(
         system = prompts.GENERAL_SYSTEM if general else prompts.GROUNDED_SYSTEM
         user = f"Sources:\n\n{prompts.format_sources(passages)}\n\nQuestion: {meant}"
         if not general:
-            user += f"\n\n{prompts.GROUNDED_REMINDER}"
+            reminder = prompts.GROUNDED_REMINDER_ONLINE if config.online() else prompts.GROUNDED_REMINDER
+            user += f"\n\n{reminder}"
     elif general:
         system, user = prompts.NO_SOURCES_SYSTEM, question
     else:
@@ -196,6 +197,7 @@ def answer(
     parts: list[str] = []
     try:
         for piece in services.llm.stream(messages, temperature=0.3, max_tokens=900):
+            piece = citation_check.plain_brackets(piece)
             parts.append(piece)
             yield "token", {"text": piece}
     except LLMError as exc:
@@ -203,7 +205,7 @@ def answer(
             _save(chat_id, "".join(parts), citations)
         yield "error", {"message": str(exc)}
         return
-    text = "".join(parts).strip()
+    text = citation_check.normalise("".join(parts).strip())
     if passages:
         try:
             text = citation_check.repair(text, passages, services.embedder)

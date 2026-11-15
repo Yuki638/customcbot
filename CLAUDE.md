@@ -27,6 +27,7 @@ A local "chat with your own material" app: FastAPI backend in `src/customcbot`, 
 - Background LLM calls pass `background=True` so chat stays responsive.
 - Error messages reach end users as written; keep them plain and say what to do next.
 - After changing prompts or retrieval, test against a real small model (`gemma3:1b`), not only the stand-in. Small models are where things break.
+- Models differ in how they write citations (`[2]`, `【2】`, `【2†L4-L9】`). `rag/citations.py` normalises them; add new styles there.
 
 ## Live testing in a cloud session
 
@@ -36,4 +37,4 @@ Ollama is not in the base image. It can be installed with Nix:
 nix-build --no-out-link -I nixpkgs=https://channels.nixos.org/nixpkgs-unstable/nixexprs.tar.xz '<nixpkgs>' -A ollama
 ```
 
-Run `<store path>/bin/ollama serve`, pull `gemma3:1b`, and set `HF_HUB_DISABLE_XET=1` so the embedding model downloads through the allowed Hugging Face hosts. YouTube is not reachable from cloud IPs; YouTube code paths are covered by tests with recorded data only. The online services' hosts are not reachable either; that path is tested against `tests/standin.py`.
+Run `<store path>/bin/ollama serve`, pull `gemma3:1b`, and set `HF_HUB_DISABLE_XET=1` so the embedding model downloads through the allowed Hugging Face hosts. YouTube is not reachable from cloud IPs; YouTube code paths are covered by tests with recorded data only. The online path is tested against `tests/standin.py`. Real services are reachable only when a network secret for their host is saved on the environment (one exists for `api.groq.com`); the app then needs any placeholder as its key, because the proxy puts in the real one.

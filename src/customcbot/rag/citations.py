@@ -18,6 +18,21 @@ MARKER = re.compile(r"[ \t]*\[(?:source\s*)?(\d+(?:\s*,\s*\d+)*)\]", re.I)
 _WORD = re.compile(r"\w{4,}")
 _BOUNDARY = re.compile(r"(?<=[.!?。！？])\s+|\n+")
 
+# Some hosted models write citations as 【2】 or 【2†L4-L9】 instead of [2].
+_BRACKETS = str.maketrans({"\u3010": "[", "\u3011": "]"})
+_DECORATED = re.compile(r"\[(\d+(?:\s*,\s*\d+)*)\s*\u2020[^\]\n]*\]")
+
+
+def plain_brackets(piece: str) -> str:
+    """Turn 【 and 】 into [ and ]. Safe on any fragment of a streamed answer."""
+    return piece.translate(_BRACKETS)
+
+
+def normalise(text: str) -> str:
+    """Rewrite the citation styles models use into the plain [2] the app understands."""
+    return _DECORATED.sub(r"[\1]", plain_brackets(text))
+
+
 # How much better another passage must score before a number is changed.
 SWAP_MARGIN = 0.15
 # Below this, a claim matches nothing well enough to be given a number.
