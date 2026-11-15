@@ -29,26 +29,40 @@ It is built for studying but works for anything you want to ask questions about:
 
 ## Get started
 
+New to this? The **[step-by-step guide](docs/GUIDE.md)** walks through every screen, from download to your first quiz.
+
+**What you need:** Windows, macOS or Linux, an internet connection for the first start, and about 2 GB of free disk space (more if you choose a local AI model). You do not need to install Python or anything else first; the start file does it for you.
+
 **1. Download customcbot.** Click the green **Code** button on this page, choose **Download ZIP**, and unzip it. (Or `git clone` this repository.)
 
 **2. Start it.**
 
-- **Windows:** double-click `start.bat`.
+- **Windows:** double-click `start.bat`. If a blue "Windows protected your PC" box appears, click **More info**, then **Run anyway**.
 - **macOS or Linux:** open a terminal in the folder and run:
 
   ```bash
   ./start.sh
   ```
 
-The first start takes a few minutes while it sets itself up. Your browser then opens a short setup page.
+  If it says "permission denied", run `chmod +x start.sh` once and try again.
+
+The first start takes a few minutes while it downloads about 1 GB of parts. Your browser then opens the app at `http://localhost:8765`.
 
 **3. Choose where the AI runs.** The setup page looks at your computer and recommends one of the two options below.
 
 ![Setup: choose where the AI runs](docs/setup.png)
 
-After that, create a collection and add your material.
+**4. Your first five minutes.**
+
+1. Click **+ New collection** and name it, for example "Biology 101".
+2. Drop a PDF on **Add files**, or paste a YouTube link, and wait until it says **Ready**.
+3. In the **Chat** tab, ask a question about it. Click a number in the answer to see the page it came from.
+4. Open the **Quiz** tab and click **Make quiz**.
+5. Open the **Flashcards** tab and click **Make cards**.
 
 To stop customcbot, close the terminal window. To start it again, run the same file.
+
+**Updating:** download the new ZIP (or `git pull`) and start it as before. Your collections are kept, because they live in a separate data folder. **Uninstalling:** delete the app folder and the data folder; the [guide](docs/GUIDE.md#8-your-data-where-it-is-backup-removal) says where it is.
 
 ## Option A: on your own computer
 
@@ -68,7 +82,7 @@ If your computer has less than about 7 GB of memory, use Option B instead: it wi
 
 ## Option B: a free online service
 
-Best for older computers: nothing large to download, and answers are fast. You create a free account at one service, copy a key, and paste it into the setup page, which links you to the right place.
+Best for older computers: nothing large to download, and answers are fast. You create a free account at one service, copy a key, and paste it into the setup page, which links you to the right place. The [guide](docs/GUIDE.md#option-b-a-free-online-service) shows each step for Groq, which is the service this app was tested with.
 
 ![Setup: connect an online service](docs/online.png)
 
