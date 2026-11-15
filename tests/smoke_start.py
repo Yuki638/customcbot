@@ -320,6 +320,17 @@ def use(base: str, service: str) -> None:
         raise SystemExit("No flashcards were written.")
     say(f"Flashcards made: {len(cards)}")
 
+    # A second model, given the study tools as its job.
+    service_id = check(client.get("/api/credentials"))[0]["id"]
+    listing = check(client.post("/api/models", json={"credential_id": service_id, "name": "vision-flash", "vision": True}))
+    second = next(m["id"] for m in listing["models"] if m["name"] == "vision-flash")
+    chosen = check(client.put("/api/models/defaults", json={"transformation": second, "vision": second}))
+    if chosen["defaults"]["transformation"]["uses"]["name"] != "vision-flash":
+        raise SystemExit(f"The study tools were not given the second model: {chosen['defaults']}")
+    if "test-key" in json.dumps(check(client.get("/api/credentials"))):
+        raise SystemExit("The key was sent back to the browser.")
+    say("Second model saved and given the study tools")
+
     finish(check(client.post(f"/api/collections/{collection}/summary", json={})), "The summary")
     summary = check(client.get(f"/api/collections/{collection}/summary"))
     if not (summary.get("summary") or "").strip():

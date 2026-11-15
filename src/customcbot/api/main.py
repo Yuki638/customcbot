@@ -14,16 +14,23 @@ from .. import __version__, config
 from ..ai import hardware
 from ..ai.embeddings import FakeEmbedder, FastEmbedder
 from ..ai.fake import FakeLLM
-from ..ai.ollama import OllamaLLM
-from ..ai.openai_compat import OpenAICompatLLM
-from ..ai.router import SwitchLLM
 from ..database.repository import (
     init_database,
 )
 from ..exceptions import CustomcbotError
 from ..services import Services
 from .middleware import same_origin_only
-from .routers import chat, collections, commands, settings, setup, sources, study
+from .routers import (
+    chat,
+    collections,
+    commands,
+    credentials,
+    models,
+    settings,
+    setup,
+    sources,
+    study,
+)
 
 WEB_DIR = Path(__file__).parent.parent / "web"
 
@@ -33,12 +40,7 @@ def build_services() -> Services:
     if os.environ.get("CUSTOMCBOT_FAKE") == "1":
         return Services(llm=FakeLLM(), embedder=FakeEmbedder(), hardware=hw, fake=True)
     embedder = FastEmbedder(config.get("embedding_model"), str(config.models_dir() / "embeddings"))
-    llm = SwitchLLM(
-        OllamaLLM(config.get_all, config.ollama_url),
-        OpenAICompatLLM(config.get_all, config.api_key),
-        config.online,
-    )
-    return Services(llm=llm, embedder=embedder, hardware=hw)
+    return Services(embedder=embedder, hardware=hw)
 
 
 def create_app(services: Services | None = None) -> FastAPI:
@@ -61,7 +63,7 @@ def create_app(services: Services | None = None) -> FastAPI:
     async def typed_error(request: Request, exc: CustomcbotError) -> JSONResponse:
         return JSONResponse({"detail": exc.message}, status_code=exc.status_code)
 
-    for module in (setup, settings, collections, sources, chat, study, commands):
+    for module in (setup, settings, credentials, models, collections, sources, chat, study, commands):
         app.include_router(module.router)
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

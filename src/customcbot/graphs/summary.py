@@ -37,7 +37,7 @@ def _windows(texts: list[str], size: int) -> list[str]:
 
 
 def _notes(window: str, services: Services) -> str:
-    return services.llm.chat(
+    return services.model("transformation").chat(
         [
             {"role": "system", "content": render("summary/map_system")},
             {"role": "user", "content": f"Passage:\n\n{window}\n\nKey points:"},
@@ -49,7 +49,7 @@ def _notes(window: str, services: Services) -> str:
 
 
 def _guide(notes: str, subject: str, services: Services) -> str:
-    return services.llm.chat(
+    return services.model("transformation").chat(
         [
             {"role": "system", "content": render("summary/reduce_system")},
             {"role": "user", "content": f'Notes on "{subject}":\n\n{notes}\n\nStudy guide:'},

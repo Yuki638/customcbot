@@ -111,7 +111,7 @@ def _extract(source: dict, services: Services) -> list[Unit]:
         set_progress(source_id, stage, fraction * 0.85)
 
     def transcribe(image):
-        return ocr.transcribe_image(image, services.llm)
+        return ocr.transcribe_image(image, services.model("vision"))
 
     if kind == "pdf":
         return pdf.extract(path, transcribe, progress)

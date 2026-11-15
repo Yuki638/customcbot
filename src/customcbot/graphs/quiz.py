@@ -68,7 +68,7 @@ def sample_passages(collection_id: int, source_ids: list[int] | None, count: int
 
 
 def _multiple_choice(passage: dict, services: Services) -> dict | None:
-    result = services.llm.chat_json(
+    result = services.model("transformation").chat_json(
         [
             {"role": "system", "content": render("quiz/mcq_system")},
             {"role": "user", "content": f"Passage:\n\n{passage['text']}"},
@@ -109,7 +109,7 @@ def _tidy(question: str) -> str:
 
 
 def _short_answer(passage: dict, services: Services) -> dict | None:
-    result = services.llm.chat_json(
+    result = services.model("transformation").chat_json(
         [
             {"role": "system", "content": render("quiz/short_system")},
             {"role": "user", "content": f"Passage:\n\n{passage['text']}"},
@@ -185,7 +185,7 @@ def grade(quiz_id: int, question_id: int, answer: str, services: Services) -> di
         f"Passage: {passage['text'] if passage else '(not available)'}\n\n"
         f"Student's answer: {answer}"
     )
-    result = services.llm.chat_json(
+    result = services.model("transformation").chat_json(
         [{"role": "system", "content": render("quiz/grade_system")}, {"role": "user", "content": user}],
         Grade,
         temperature=0.0,

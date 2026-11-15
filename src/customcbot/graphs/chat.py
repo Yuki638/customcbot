@@ -82,7 +82,7 @@ def standalone_question(question: str, history: list[dict], services: Services) 
         messages.append({"role": "assistant", "content": json.dumps(reply)})
     messages.append({"role": "user", "content": f"{transcript}\nLast message: {question}"})
     try:
-        result = services.llm.chat_json(messages, Rewrite, temperature=0.0, max_tokens=120)
+        result = services.model("chat").chat_json(messages, Rewrite, temperature=0.0, max_tokens=120)
     except LLMError:
         return question
     rewritten = " ".join(result.question.split())
@@ -204,7 +204,7 @@ def answer(
 
     parts: list[str] = []
     try:
-        for piece in services.llm.stream(messages, temperature=0.3, max_tokens=900):
+        for piece in services.model("chat").stream(messages, temperature=0.3, max_tokens=900):
             piece = citation_check.plain_brackets(piece)
             parts.append(piece)
             yield "token", {"text": piece}

@@ -129,7 +129,11 @@ class LLM(ABC):
                 return model.model_validate(extract_json(raw))
             except (ValueError, ValidationError) as exc:
                 last_error = exc
-        raise LLMError(f"The model did not return valid data: {last_error}")
+        # The technical detail stays attached for the log; the user gets something they can act on.
+        raise LLMError(
+            "The model's reply was not in the form the app needs. Try again, or choose a larger "
+            "model for this work in Settings."
+        ) from last_error
 
 
 def extract_json(raw: str) -> object:

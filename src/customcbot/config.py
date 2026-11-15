@@ -27,7 +27,6 @@ DEFAULTS: dict[str, Any] = {
     "provider": "local",
     "online_service": None,  # id of a preset in llm/catalog.py, or "custom"
     "api_base_url": None,
-    "api_key": None,
     "api_model": None,
     "api_vision": False,  # whether the online model can read images
 }
@@ -64,12 +63,8 @@ def ollama_url() -> str:
 
 
 def online() -> bool:
+    """Whether questions are answered by an online service rather than a local model."""
     return get("provider") == "online"
-
-
-def api_key() -> str | None:
-    """The key for the online service: saved in Settings, or from the environment."""
-    return get("api_key") or os.environ.get("CUSTOMCBOT_API_KEY") or None
 
 
 def passage_budget() -> tuple[int, int]:
@@ -81,9 +76,11 @@ def passage_budget() -> tuple[int, int]:
 
 def public() -> dict[str, Any]:
     """All settings, safe to send to the browser: the key itself never leaves the server."""
+    from .ai import models  # here, not at the top: the models are built on this module
+
     values = get_all()
-    del values["api_key"]
-    values["api_key_saved"] = bool(api_key())
+    saved = models.online_credential(values["online_service"]) if values["online_service"] else None
+    values["api_key_saved"] = bool(saved and saved.key())
     return values
 
 
@@ -97,7 +94,8 @@ def get(key: str) -> Any:
 def get_all() -> dict[str, Any]:
     values = dict(DEFAULTS)
     for row in repo_query("SELECT key, value FROM settings"):
-        values[row["key"]] = json.loads(row["value"])
+        if row["key"] in DEFAULTS:  # other rows are settings records, stored by domain models
+            values[row["key"]] = json.loads(row["value"])
     return values
 
 

@@ -2,6 +2,7 @@
 
 import { html, useEffect, useState } from '/vendor/preact-htm.js';
 import { api } from '/api.js';
+import { ModelsDialog } from '/components/models.js';
 import { Dialog, Progress, toast } from '/components/ui.js';
 
 function gigabytes(bytes) {
@@ -316,6 +317,9 @@ export function Settings({ status, onClose, onChangeModel, refresh }) {
   const [numCtx, setNumCtx] = useState(settings.num_ctx);
   const [whisper, setWhisper] = useState(settings.whisper_model);
   const [url, setUrl] = useState(settings.ollama_url || '');
+  const [showModels, setShowModels] = useState(false);
+
+  if (showModels) return html`<${ModelsDialog} onClose=${() => setShowModels(false)} refresh=${refresh} />`;
 
   const save = async () => {
     try {
@@ -352,6 +356,11 @@ export function Settings({ status, onClose, onChangeModel, refresh }) {
         </div>
         <button class="btn" onClick=${onChangeModel}>Change</button>
       </div>
+      ${!status.fake && html`
+        <div class="row wrap">
+          <div class="grow muted small">Use more than one service, or a different model for chat, for quizzes and for reading images.</div>
+          <button class="btn" onClick=${() => setShowModels(true)}>Services and models</button>
+        </div>`}
       ${!online && html`
         <label class="field">Memory use
           <select value=${String(numCtx)} onChange=${(e) => setNumCtx(e.target.value)}>

@@ -17,9 +17,9 @@ A "chat with your own material" app: FastAPI backend in `src/customcbot`, a no-b
 The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a lighter stack (SQLite, one process, no build step). All paths are under `src/customcbot/`.
 
 - `api/`: `main.py` builds the app, `middleware.py` checks each request, `routers/` has one file per resource, `command_service.py` submits and reads background jobs.
-- `domain/`: stored objects (`Collection`, `Source`, `ChatSession`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record.
-- `database/`: `repository.py` (`repo_query`, `repo_one`, `repo_execute`), `migrate.py` and numbered files in `migrations/`, hybrid search in `search.py`.
-- `ai/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the switch between them (`router.py`), embeddings, stand-in model, hardware detection, model sizes and online services (`catalog.py`).
+- `domain/`: stored objects (`Collection`, `Source`, `ChatSession`, `Credential`, `Model`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record such as `DefaultModels`.
+- `database/`: `repository.py` (`repo_query`, `repo_one`, `repo_execute`), `migrate.py` and numbered files in `migrations/` (`.sql`, or `.py` with `upgrade(conn)` to move data), hybrid search in `search.py`.
+- `ai/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the list of kinds of service (`provider_registry.py`), which saved model does which job (`models.py`), ready-made clients per job (`provision.py`), embeddings, stand-in model, hardware detection, model sizes and online services (`catalog.py`).
 - `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `summary.py`, `quiz.py`, `flashcards.py`.
 - `commands/`: background work. `registry.py` has the `@command` decorator, `worker.py` runs commands one at a time.
 - `prompts/`: every instruction sent to the model, as Jinja templates; `utils/prompter.py` renders them.
@@ -35,7 +35,8 @@ The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a
 - Slow work is a command: decorate it with `@command("name")` in a module that `commands/__init__.py` imports, and submit it with `command_service.submit_command_job`.
 - All text sent to the model lives in `prompts/`, named by path: `render("chat/grounded_system")`. A missing value raises; it is never left blank.
 - Model names appear only in `ai/catalog.py`. Online services get no fixed model name: the app lists what the service offers and suggests one by pattern.
-- The online key must never be returned by an API route. Use `config.public()` for anything sent to the browser.
+- Several services can be saved at once (`credentials`, `models` tables). Code that needs a model asks for it by job: `services.model("chat")`, `"transformation"` (summaries, quizzes, flashcards) or `"vision"`. Never build a client directly.
+- Keys are stored encrypted (`utils/encryption.py`) and must never be returned by an API route. Send `Credential.public()` and `config.public()` to the browser, never `model_dump()` of a credential.
 - Background LLM calls pass `background=True` so chat stays responsive.
 - Error messages reach end users as written; keep them plain and say what to do next.
 - After changing prompts or retrieval, test against a real small model (`gemma3:1b`), not only the stand-in. Small models are where things break.

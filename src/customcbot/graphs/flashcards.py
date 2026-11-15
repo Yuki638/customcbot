@@ -57,7 +57,7 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
             break
         context.progress(f"Writing cards ({created} of {count})", index / len(passages))
         try:
-            result = services.llm.chat_json(
+            result = services.model("transformation").chat_json(
                 [
                     {"role": "system", "content": render("flashcards/system")},
                     {"role": "user", "content": f"Passage:\n\n{passage['text']}"},

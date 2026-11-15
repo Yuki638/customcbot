@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from ... import config
+from ...ai import models
 from ...exceptions import InvalidInputError
 
 router = APIRouter(prefix="/api")
@@ -35,4 +36,9 @@ def update_settings(body: SettingsUpdate) -> dict:
         if key in values:
             values[key] = (values[key] or "").strip() or None
     config.set_many(values)
+    if not config.online() and ("chat_model" in values or "vision_model" in values):
+        # A different local model was typed in: make it the one that is used.
+        chat_model = config.get("chat_model")
+        if chat_model:
+            models.use_local(chat_model, config.get("vision_model"))
     return config.public()

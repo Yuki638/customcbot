@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+import os
 import threading
 
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
 from ... import config
-from ...ai import catalog
+from ...ai import catalog, models
 from ...ai.base import LLMError
 from ...ai.ollama import OllamaLLM
 from ...ai.openai_compat import OpenAICompatLLM
-from ...ai.router import SwitchLLM
 from ...exceptions import ConflictError, InvalidInputError
 
 router = APIRouter(prefix="/api")
@@ -39,17 +39,13 @@ def _pull_state(request: Request) -> dict:
 
 
 def _local(services) -> OllamaLLM | None:
-    llm = services.llm
-    if isinstance(llm, SwitchLLM):
-        return llm.local
-    return llm if isinstance(llm, OllamaLLM) else None
+    """The client for managing Ollama, or None in demo mode."""
+    return services.provisioner.ollama() if services.llm is None else None
 
 
 def _online(services) -> OpenAICompatLLM | None:
-    llm = services.llm
-    if isinstance(llm, SwitchLLM):
-        return llm.online
-    return llm if isinstance(llm, OpenAICompatLLM) else None
+    """The client for checking online services, or None in demo mode."""
+    return services.provisioner.online() if services.llm is None else None
 
 
 @router.get("/setup")
@@ -72,10 +68,14 @@ def status(request: Request) -> dict:
         version, installed, chat_ok, local_vision = "built-in test model", [], True, services.llm.has_vision()
     if online:
         usable = bool(settings["api_base_url"] and settings["api_model"])
-        vision = bool(settings["api_vision"])
     else:
         usable = bool(version and chat_ok)
+    if local is None:
         vision = local_vision
+    else:
+        # Reading images can be given to a different model than chat.
+        reader = models.resolve("vision")
+        vision = bool(reader) and (not reader[1].is_local or (bool(version) and local.is_installed(reader[0].name)))
     return {
         "ready": services.fake or bool(settings["setup_done"] and usable),
         "fake": services.fake,
@@ -87,6 +87,7 @@ def status(request: Request) -> dict:
         "tiers": [t.to_dict() for t in catalog.TIERS],
         "recommended": catalog.recommend(services.hardware),
         "settings": settings,
+        "models": models.describe(),
         "installed_models": installed,
         "chat_model_installed": chat_ok,
         "vision_available": vision,
@@ -116,9 +117,10 @@ def install(body: InstallRequest, request: Request) -> dict:
     else:
         raise InvalidInputError("Choose a model size.")
     config.set_many({**values, "provider": "local"})
+    models.use_local(values["chat_model"], values["vision_model"])
 
-    models = list(dict.fromkeys(m for m in (values["chat_model"], values["vision_model"]) if m))
-    _start_install(services, state, models)
+    wanted = list(dict.fromkeys(m for m in (values["chat_model"], values["vision_model"]) if m))
+    _start_install(services, state, wanted)
     return state
 
 
@@ -134,8 +136,9 @@ def _resolve_online(body: OnlineRequest) -> tuple[catalog.OnlineService, str, st
     if not base_url.startswith(("http://", "https://")):
         base_url = "https://" + base_url
     key = (body.api_key or "").strip()
-    if not key and config.get("online_service") == service.id:
-        key = config.api_key() or ""  # changing the model keeps the saved key
+    if not key:
+        saved = models.online_credential(service.id)  # changing the model keeps the saved key
+        key = (saved.key() if saved else None) or os.environ.get("CUSTOMCBOT_API_KEY") or ""
     if not key and service.needs_key:
         raise InvalidInputError("Paste your key first.")
     return service, base_url.rstrip("/"), key or None
@@ -186,16 +189,8 @@ def use_online(body: OnlineRequest, request: Request) -> dict:
         llm.check(base_url, key, model)
     except LLMError as exc:
         raise InvalidInputError(str(exc)) from None
-    values = {
-        "provider": "online",
-        "online_service": service.id,
-        "api_base_url": base_url,
-        "api_model": model,
-        "api_vision": service.vision if body.vision is None else bool(body.vision),
-    }
-    if (body.api_key or "").strip():
-        values["api_key"] = body.api_key.strip()
-    config.set_many(values)
+    vision = service.vision if body.vision is None else bool(body.vision)
+    models.use_online(service.id, base_url, (body.api_key or "").strip() or None, model, vision)
     _start_install(services, state, [])
     return state
 

@@ -198,7 +198,7 @@ Useful places in the code:
 - `src/customcbot/ingest/`: one file per kind of source.
 - `src/customcbot/web/`: the interface. Edit and reload; there is nothing to compile.
 
-Settings by environment variable: `CUSTOMCBOT_DATA_DIR` (where data is stored), `OLLAMA_HOST` (if Ollama runs somewhere else) and `CUSTOMCBOT_API_KEY` (the key for an online service, instead of saving it in Settings).
+Settings by environment variable: `CUSTOMCBOT_DATA_DIR` (where data is stored), `OLLAMA_HOST` (if Ollama runs somewhere else), `CUSTOMCBOT_API_KEY` (the key for an online service, instead of saving it in Settings) and `CUSTOMCBOT_ENCRYPTION_KEY` (a passphrase used to encrypt saved keys, instead of the `secret.key` file in the data folder).
 
 ### Running with Docker
 
