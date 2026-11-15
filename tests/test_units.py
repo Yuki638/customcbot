@@ -198,3 +198,32 @@ def test_audio_is_decoded_to_mono_16khz(tmp_path):
     assert samples.dtype.name == "float32" and samples.ndim == 1
     assert abs(len(samples) - 2 * media.SAMPLE_RATE) < 200
     assert 0.2 < float(abs(samples).max()) <= 1.0
+
+
+def test_reply_closed_with_a_curly_quote_is_rescued():
+    # Seen with Gemma 3 4B: the last text ends with ” and the reply stops there.
+    raw = '{"question": "What is ATP?", "answer": "The cell\u2019s energy carrier.\u201d}'
+    assert extract_json(raw) == {"question": "What is ATP?", "answer": "The cell\u2019s energy carrier."}
+    cut_short = '{"question": "What is ATP?", "answer": "An energy carrier.\u201d'
+    assert extract_json(cut_short)["answer"] == "An energy carrier."
+    # A reply cut off mid-way may be rescued into an incomplete object. That is safe:
+    # chat_json checks the fields and asks again when any are missing.
+    class Card(BaseModel):
+        question: str
+        answer: str
+
+    replies = iter(['{"question": "What is', '{"question": "What is ATP?", "answer": "An energy carrier."}'])
+    llm = FakeLLM(responder=lambda messages, schema, images: next(replies))
+    assert llm.chat_json([{"role": "user", "content": "x"}], Card).answer == "An energy carrier."
+    assert len(llm.calls) == 2
+
+
+def test_structured_requests_ask_for_plain_quotes():
+    class Answer(BaseModel):
+        value: int
+
+    llm = FakeLLM(responder=lambda messages, schema, images: '{"value": 1}')
+    original = [{"role": "user", "content": "Give a number."}]
+    llm.chat_json(original, Answer)
+    assert "plain straight quotes" in llm.calls[0]["messages"][-1]["content"]
+    assert original[0]["content"] == "Give a number."  # the caller's messages are left alone

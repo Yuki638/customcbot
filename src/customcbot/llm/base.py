@@ -116,7 +116,11 @@ class LLM(ABC):
 
     def chat_json(self, messages: list[Message], model: type[T], **kwargs) -> T:
         """Ask for a reply matching a pydantic model. Retries once on bad output."""
+        from ..rag import prompts  # here, not at the top: rag imports this module
+
         schema = model.model_json_schema()
+        messages = [dict(m) for m in messages]
+        messages[-1]["content"] = f"{messages[-1]['content']}\n\n{prompts.JSON_QUOTES_NOTE}"
         last_error: Exception | None = None
         for _ in range(2):
             raw = self.chat(messages, json_schema=schema, **kwargs)
@@ -144,5 +148,22 @@ def extract_json(raw: str) -> object:
     try:
         value, _ = decoder.raw_decode(text[start:])
     except json.JSONDecodeError as exc:
-        raise ValueError(f"invalid JSON in model reply: {exc}") from exc
+        repaired = _repair(text[start:])
+        if repaired is None:
+            raise ValueError(f"invalid JSON in model reply: {exc}") from exc
+        return repaired
     return value
+
+
+def _repair(text: str) -> object | None:
+    """Rescue a reply where the model closed a text with a curly quote.
+
+    The reply then usually stops short as well, so the missing end is tried too.
+    """
+    fixed = re.sub(r"[\u201c\u201d](?=\s*(?:[,}\]]|$))", '"', text).rstrip()
+    for ending in ("", "}", '"}', "]}", '"]}'):
+        try:
+            return json.loads(fixed + ending)
+        except json.JSONDecodeError:
+            continue
+    return None

@@ -358,3 +358,20 @@ def test_settings_can_be_changed_within_limits(client):
     updated = client.put("/api/settings", json={"values": {"num_ctx": 10, "vision_model": " "}}).json()
     assert updated["num_ctx"] == 1024 and updated["vision_model"] is None
     assert client.put("/api/settings", json={"values": {"setup_done": False}}).status_code == 400
+
+
+def test_a_failed_quiz_says_why(client, collection):
+    from customcbot.llm.base import LLMError
+    from customcbot.llm.fake import FakeLLM
+
+    upload(client, collection, "cells.txt", (CELLS * 30).encode())
+
+    def unreachable(messages, schema, images):
+        raise LLMError("Ollama is not running. Start Ollama and try again.")
+
+    client.app.state.services.llm = FakeLLM(responder=unreachable)
+    for kind in ("quizzes", "flashcards"):
+        response = client.post(f"/api/collections/{collection}/{kind}", json={"count": 2})
+        wait(client)
+        job = client.get(f"/api/jobs/{response.json()['id']}").json()
+        assert job["status"] == "error" and "Ollama is not running" in job["error"], job

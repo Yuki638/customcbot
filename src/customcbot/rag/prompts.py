@@ -65,6 +65,13 @@ CONDENSE_EXAMPLES = [
     ),
 ]
 
+# Added to every request for a structured reply. Without it a small model sometimes
+# closes a text with a curly quote, the reply never ends, and the result is lost
+# (2 of 6 quiz questions survived without this line, 6 of 6 with it).
+JSON_QUOTES_NOTE = (
+    'Reply in JSON. Inside the JSON use only plain straight quotes (") and plain apostrophes.'
+)
+
 # Added to the request for services that cannot be given a reply format directly.
 JSON_INSTRUCTION = (
     "Reply with one JSON object only, with no other text before or after it. "
@@ -96,7 +103,8 @@ multiple-choice question that tests understanding of an important fact or idea.
 
 - Give the one correct answer, and three wrong answers that are plausible but clearly incorrect.
 - Keep all four answers similar in length and style.
-- The question must make sense without seeing the passage. Never write "according to the passage".
+- The student does not see the passage. Never mention "the passage" or "the text", in the \
+question or in the explanation.
 - Add a one-sentence explanation of why the correct answer is right.
 - Write in the language of the passage."""
 

@@ -47,6 +47,7 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
         raise ValueError("Add some material first.")
 
     created = 0
+    problem = ""  # why the model failed, if it did
     for index, passage in enumerate(passages):
         if created >= count:
             break
@@ -58,11 +59,12 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
                     {"role": "user", "content": f"Passage:\n\n{passage['text']}"},
                 ],
                 Cards,
-                temperature=0.4,
+                temperature=0.2,
                 max_tokens=400,
                 background=True,
             )
-        except LLMError:
+        except LLMError as exc:
+            problem = str(exc)
             continue
         for card in result.cards[:2]:
             if created >= count or not card.front.strip() or not card.back.strip():
@@ -73,7 +75,7 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
             )
             created += 1
     if not created:
-        raise ValueError("The model could not write cards from this material. Try again or use a larger model.")
+        raise ValueError(problem or "The model could not write cards from this material. Try again or use a larger model.")
     return {"created": created}
 
 

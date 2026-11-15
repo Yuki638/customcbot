@@ -137,6 +137,10 @@ class OllamaLLM(LLM):
                             continue
                         update = json.loads(line)
                         if update.get("error"):
+                            if json_schema and "repeat limit" in update["error"]:
+                                # A small model sometimes pads finished JSON with endless
+                                # spaces until Ollama stops it. What came before is the reply.
+                                return
                             raise LLMError(_explain(update["error"], model))
                         piece = (update.get("message") or {}).get("content")
                         if piece:

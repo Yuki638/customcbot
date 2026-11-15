@@ -69,7 +69,7 @@ def _multiple_choice(passage: dict, services: Services) -> dict | None:
             {"role": "user", "content": f"Passage:\n\n{passage['text']}"},
         ],
         MultipleChoice,
-        temperature=0.5,
+        temperature=0.2,
         max_tokens=400,
         background=True,
     )
@@ -85,7 +85,7 @@ def _multiple_choice(passage: dict, services: Services) -> dict | None:
         "question": _tidy(result.question),
         "options": options,
         "answer_index": options.index(correct),
-        "explanation": result.explanation.strip(),
+        "explanation": result.explanation.strip().strip("\u201c\u201d\u00a0 "),
     }
 
 
@@ -110,7 +110,7 @@ def _short_answer(passage: dict, services: Services) -> dict | None:
             {"role": "user", "content": f"Passage:\n\n{passage['text']}"},
         ],
         ShortAnswer,
-        temperature=0.5,
+        temperature=0.2,
         max_tokens=300,
         background=True,
     )
@@ -128,13 +128,15 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
         raise ValueError("Add some material first.")
 
     questions: list[dict] = []
+    problem = ""  # why the model failed, if it did: "Ollama is not running", a used-up allowance...
     for index, passage in enumerate(passages):
         context.progress(f"Writing question {index + 1} of {len(passages)}", index / len(passages))
         short = style == "short" or (style == "mixed" and index % 3 == 2)
         try:
             question = (_short_answer if short else _multiple_choice)(passage, services)
-        except LLMError:
+        except LLMError as exc:
             question = None  # one bad question should not sink the quiz
+            problem = str(exc)
         if question is None:
             continue
         question.update(
@@ -145,7 +147,7 @@ def job_generate(job: dict, params: dict, services: Services, context: JobContex
         )
         questions.append(question)
     if not questions:
-        raise ValueError("The model could not write questions from this material. Try again or use a larger model.")
+        raise ValueError(problem or "The model could not write questions from this material. Try again or use a larger model.")
 
     title = params.get("title") or f"Quiz, {len(questions)} questions"
     quiz_id = db.execute(
