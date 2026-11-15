@@ -8,7 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx
 
-from .chunking import Unit
+from ..utils.chunking import Unit
 
 _ID = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _NOISE = re.compile(r"\[(?:music|applause|laughter|música|musik)\]", re.I)

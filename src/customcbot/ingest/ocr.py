@@ -7,7 +7,7 @@ import threading
 
 from PIL import Image, ImageOps
 
-from ..llm.base import LLM, LLMError
+from ..ai.base import LLM, LLMError
 
 VISION_PROMPT = (
     "Transcribe all the text in this image exactly as written, including handwriting. "

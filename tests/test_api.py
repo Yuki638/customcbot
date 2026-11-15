@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 
 from customcbot.ingest import youtube
-from customcbot.ingest.chunking import Unit
+from customcbot.utils.chunking import Unit
 
 from .conftest import wait
 from .helpers import ask, docx_bytes, png_bytes, pptx_bytes, scanned_pdf, text_image, text_pdf
@@ -187,8 +187,8 @@ def test_follow_up_question_is_rewritten_before_searching(client, collection):
 
 
 def test_rewrite_is_used_only_when_it_keeps_the_question(services):
-    from customcbot.llm.fake import FakeLLM
-    from customcbot.rag import chat
+    from customcbot.ai.fake import FakeLLM
+    from customcbot.graphs import chat
 
     history = [
         {"role": "user", "content": "Where does glycolysis take place?"},
@@ -361,8 +361,8 @@ def test_settings_can_be_changed_within_limits(client):
 
 
 def test_a_failed_quiz_says_why(client, collection):
-    from customcbot.llm.base import LLMError
-    from customcbot.llm.fake import FakeLLM
+    from customcbot.ai.base import LLMError
+    from customcbot.ai.fake import FakeLLM
 
     upload(client, collection, "cells.txt", (CELLS * 30).encode())
 

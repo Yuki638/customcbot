@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from customcbot.app import create_app
-from customcbot.llm import hardware
-from customcbot.llm.fake import FakeLLM
-from customcbot.rag.embeddings import FakeEmbedder
+from customcbot.ai import hardware
+from customcbot.ai.embeddings import FakeEmbedder
+from customcbot.ai.fake import FakeLLM
+from customcbot.api.main import create_app
 from customcbot.services import Services
 
 

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from .llm.base import LLM
-from .llm.hardware import Hardware
-from .rag.embeddings import Embedder
-from .worker import Worker
+from .ai.base import LLM
+from .ai.embeddings import Embedder
+from .ai.hardware import Hardware
+from .commands.worker import Worker
 
 
 @dataclass

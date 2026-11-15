@@ -9,7 +9,7 @@ from typing import Any
 
 from platformdirs import user_data_dir
 
-from . import db
+from .database.repository import repo_execute, repo_one, repo_query
 
 DEFAULTS: dict[str, Any] = {
     "tier": None,  # "lite" | "standard" | "plus" | "custom"
@@ -88,7 +88,7 @@ def public() -> dict[str, Any]:
 
 
 def get(key: str) -> Any:
-    row = db.one("SELECT value FROM settings WHERE key = ?", (key,))
+    row = repo_one("SELECT value FROM settings WHERE key = ?", (key,))
     if row is None:
         return DEFAULTS.get(key)
     return json.loads(row["value"])
@@ -96,7 +96,7 @@ def get(key: str) -> Any:
 
 def get_all() -> dict[str, Any]:
     values = dict(DEFAULTS)
-    for row in db.query("SELECT key, value FROM settings"):
+    for row in repo_query("SELECT key, value FROM settings"):
         values[row["key"]] = json.loads(row["value"])
     return values
 
@@ -105,7 +105,7 @@ def set_many(values: dict[str, Any]) -> None:
     for key, value in values.items():
         if key not in DEFAULTS:
             raise KeyError(f"Unknown setting: {key}")
-        db.execute(
+        repo_execute(
             "INSERT INTO settings (key, value) VALUES (?, ?) "
             "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
             (key, json.dumps(value)),

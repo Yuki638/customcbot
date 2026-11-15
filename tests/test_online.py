@@ -7,13 +7,13 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
 from customcbot import config
-from customcbot.app import create_app
-from customcbot.llm import catalog, hardware
-from customcbot.llm.base import LLMError, set_notice_hook
-from customcbot.llm.ollama import OllamaLLM
-from customcbot.llm.openai_compat import OpenAICompatLLM
-from customcbot.llm.router import SwitchLLM
-from customcbot.rag.embeddings import FakeEmbedder
+from customcbot.ai import catalog, hardware
+from customcbot.ai.base import LLMError, set_notice_hook
+from customcbot.ai.embeddings import FakeEmbedder
+from customcbot.ai.ollama import OllamaLLM
+from customcbot.ai.openai_compat import OpenAICompatLLM
+from customcbot.ai.router import SwitchLLM
+from customcbot.api.main import create_app
 from customcbot.services import Services
 
 from . import standin

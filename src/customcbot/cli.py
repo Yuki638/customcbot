@@ -38,7 +38,7 @@ def main() -> None:
 
     import uvicorn
 
-    from .app import create_app
+    from .api.main import create_app
 
     app = create_app()
     port = _free_port(args.host, args.port)

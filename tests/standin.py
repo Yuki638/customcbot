@@ -26,7 +26,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from customcbot.llm.fake import default_responder
+from customcbot.ai.fake import default_responder
 
 KEY = "test-key"
 MODELS = [

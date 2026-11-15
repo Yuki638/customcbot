@@ -8,7 +8,7 @@ from pathlib import Path
 import pypdfium2 as pdfium
 from PIL import Image
 
-from .chunking import Unit
+from ..utils.chunking import Unit
 
 # A page with less text than this is treated as a scan and read as an image.
 MIN_TEXT_CHARS = 40

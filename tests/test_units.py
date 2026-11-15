@@ -5,13 +5,13 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel
 
+from customcbot.ai import catalog
+from customcbot.ai.base import extract_json
+from customcbot.ai.fake import FakeLLM, instance_from_schema
+from customcbot.ai.hardware import Hardware
 from customcbot.ingest import youtube
-from customcbot.ingest.chunking import Unit, make_chunks, split_pieces
-from customcbot.llm import catalog
-from customcbot.llm.base import extract_json
-from customcbot.llm.fake import FakeLLM, instance_from_schema
-from customcbot.llm.hardware import Hardware
-from customcbot.rag.prompts import format_time
+from customcbot.utils.chunking import Unit, make_chunks, split_pieces
+from customcbot.utils.context import format_time
 
 
 def test_split_pieces_respects_limit():
@@ -146,8 +146,8 @@ def test_standard_tier_uses_small_context_on_8gb():
 
 
 def test_wrong_citation_numbers_are_corrected():
-    from customcbot.rag import citations
-    from customcbot.rag.embeddings import FakeEmbedder
+    from customcbot.ai.embeddings import FakeEmbedder
+    from customcbot.utils import citations
 
     passages = [
         {"text": "Glycolysis takes place in the cytoplasm and produces two ATP molecules."},
@@ -172,7 +172,7 @@ def test_wrong_citation_numbers_are_corrected():
 
 
 def test_quiz_questions_do_not_mention_the_passage():
-    from customcbot.study.quiz import _tidy
+    from customcbot.graphs.quiz import _tidy
 
     assert _tidy("According to the passage, what does glycolysis produce?") == "What does glycolysis produce?"
     assert _tidy("What is the purpose of fermentation, according to the passage?") == "What is the purpose of fermentation?"
@@ -230,7 +230,7 @@ def test_structured_requests_ask_for_plain_quotes():
 
 
 def test_other_citation_styles_become_plain_brackets():
-    from customcbot.rag import citations
+    from customcbot.utils import citations
 
     # Seen with gpt-oss on Groq.
     assert citations.normalise("It is in the matrix\u30102\u3011.") == "It is in the matrix[2]."

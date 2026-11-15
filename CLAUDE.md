@@ -1,6 +1,6 @@
 # Notes for working on customcbot
 
-A local "chat with your own material" app: FastAPI backend in `src/customcbot`, a no-build Preact interface in `src/customcbot/web`, one SQLite file for storage, Ollama for the model.
+A "chat with your own material" app: FastAPI backend in `src/customcbot`, a no-build Preact interface in `src/customcbot/web`, one SQLite file for storage, and a local model through Ollama or a free online service.
 
 ## Commands
 
@@ -14,21 +14,33 @@ A local "chat with your own material" app: FastAPI backend in `src/customcbot`, 
 
 ## Layout
 
-- `llm/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the switch between them (`router.py`), stand-in model, hardware detection, model sizes and online services (`catalog.py`).
-- `ingest/`: one module per kind of source; `pipeline.py` ties them together; `chunking.py` splits text.
-- `rag/`: embeddings, hybrid search (`retrieve.py`), prompts, chat, citation checking.
-- `study/`: summaries, quizzes, flashcards. These run as jobs on the single background worker (`worker.py`).
-- `api/`: HTTP routes. `app.py` builds the app; `cli.py` is the entry point.
+The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a lighter stack (SQLite, one process, no build step). All paths are under `src/customcbot/`.
+
+- `api/`: `main.py` builds the app, `middleware.py` checks each request, `routers/` has one file per resource, `command_service.py` submits and reads background jobs.
+- `domain/`: stored objects (`Collection`, `Source`, `ChatSession`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record.
+- `database/`: `repository.py` (`repo_query`, `repo_one`, `repo_execute`), `migrate.py` and numbered files in `migrations/`, hybrid search in `search.py`.
+- `ai/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the switch between them (`router.py`), embeddings, stand-in model, hardware detection, model sizes and online services (`catalog.py`).
+- `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `summary.py`, `quiz.py`, `flashcards.py`.
+- `commands/`: background work. `registry.py` has the `@command` decorator, `worker.py` runs commands one at a time.
+- `prompts/`: every instruction sent to the model, as Jinja templates; `utils/prompter.py` renders them.
+- `ingest/`: one module per kind of source (PDF, Office, images, audio and video, YouTube).
+- `utils/`: chunking, citation checking, building the passage text for a prompt.
+- `web/`: the interface. `cli.py` is the entry point.
 
 ## Conventions
 
-- All text sent to the model lives in `rag/prompts.py`.
-- Model names appear only in `llm/catalog.py`. Online services get no fixed model name: the app lists what the service offers and suggests one by pattern.
+- Routes stay thin: they call domain models and graphs. Raise the typed errors in `exceptions.py` (`NotFoundError`, `InvalidInputError`, ...); `api/main.py` turns them into replies. Do not build error replies by hand.
+- To change the tables, add a new numbered file to `database/migrations/`. Never edit one that has shipped: existing data folders have already run it.
+- `ObjectModel.save()` writes every field. When the worker may be writing the same row (a source being read), use `update(field=...)`.
+- Slow work is a command: decorate it with `@command("name")` in a module that `commands/__init__.py` imports, and submit it with `command_service.submit_command_job`.
+- All text sent to the model lives in `prompts/`, named by path: `render("chat/grounded_system")`. A missing value raises; it is never left blank.
+- Model names appear only in `ai/catalog.py`. Online services get no fixed model name: the app lists what the service offers and suggests one by pattern.
 - The online key must never be returned by an API route. Use `config.public()` for anything sent to the browser.
 - Background LLM calls pass `background=True` so chat stays responsive.
 - Error messages reach end users as written; keep them plain and say what to do next.
 - After changing prompts or retrieval, test against a real small model (`gemma3:1b`), not only the stand-in. Small models are where things break.
-- Models differ in how they write citations (`[2]`, `【2】`, `【2†L4-L9】`). `rag/citations.py` normalises them; add new styles there.
+- Models differ in how they write citations (`[2]`, `【2】`, `【2†L4-L9】`). `utils/citations.py` normalises them; add new styles there.
+- The code is synchronous on purpose (SQLite and the local model clients are). Routes are plain `def`, so FastAPI runs them on threads.
 
 ## Live testing in a cloud session
 

@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .chunking import Unit
+from ..utils.chunking import Unit
 
 SAMPLE_RATE = 16000  # what the speech-to-text model expects
 

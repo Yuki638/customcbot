@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .chunking import Unit
+from ..utils.chunking import Unit
 
 SECTION_CHARS = 3000
 

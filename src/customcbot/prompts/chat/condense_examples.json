@@ -1,0 +1,34 @@
+[
+  {
+    "conversation": "User: What is photosynthesis?\nTutor: Photosynthesis is how plants make glucose from light, water and carbon dioxide.\nLast message: Where does it happen?",
+    "reply": {
+      "topic": "photosynthesis",
+      "needs_topic": true,
+      "question": "Where does photosynthesis happen?"
+    }
+  },
+  {
+    "conversation": "User: When did the French Revolution begin?\nTutor: The French Revolution began in 1789 with the storming of the Bastille.\nLast message: What is the boiling point of water?",
+    "reply": {
+      "topic": "the French Revolution",
+      "needs_topic": false,
+      "question": "What is the boiling point of water?"
+    }
+  },
+  {
+    "conversation": "User: What is the first step of the water cycle?\nTutor: The first step is evaporation: the sun heats water and it turns into vapour.\nLast message: and the next one?",
+    "reply": {
+      "topic": "the steps of the water cycle, evaporation",
+      "needs_topic": true,
+      "question": "What is the step after evaporation in the water cycle?"
+    }
+  },
+  {
+    "conversation": "User: How does a vaccine train the immune system?\nTutor: A vaccine shows the immune system a harmless piece of a germ so it can make antibodies.\nLast message: explain that more simply",
+    "reply": {
+      "topic": "how a vaccine trains the immune system",
+      "needs_topic": true,
+      "question": "Explain more simply how a vaccine trains the immune system."
+    }
+  }
+]

@@ -188,9 +188,13 @@ uv run python -m tests.standin 9911
 
 Useful places in the code:
 
-- `src/customcbot/llm/catalog.py`: the local model sizes and the list of online services.
-- `src/customcbot/llm/openai_compat.py`: the client for online services.
-- `src/customcbot/rag/prompts.py`: every instruction sent to the model.
+- `src/customcbot/api/routers/`: the web routes, one file per kind of thing.
+- `src/customcbot/domain/`: collections, sources and chats as objects.
+- `src/customcbot/database/`: storage, search, and the numbered files that change the tables.
+- `src/customcbot/ai/`: the model clients, the local model sizes and the list of online services (`catalog.py`).
+- `src/customcbot/graphs/`: the multi-step workflows (reading a source, chat, quiz, flashcards, summaries).
+- `src/customcbot/commands/`: background work.
+- `src/customcbot/prompts/`: every instruction sent to the model, one template per file.
 - `src/customcbot/ingest/`: one file per kind of source.
 - `src/customcbot/web/`: the interface. Edit and reload; there is nothing to compile.
 
