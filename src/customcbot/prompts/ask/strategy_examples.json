@@ -1,0 +1,14 @@
+[
+  {
+    "question": "What is the boiling point of water?",
+    "reply": {"searches": [{"term": "boiling point of water", "instructions": "Find the temperature at which water boils."}]}
+  },
+  {
+    "question": "How is mitosis different from meiosis, and why does that matter for inheritance?",
+    "reply": {"searches": [
+      {"term": "mitosis", "instructions": "Find what mitosis is and what it produces."},
+      {"term": "meiosis", "instructions": "Find what meiosis is and what it produces."},
+      {"term": "inheritance genetic variation", "instructions": "Find how cell division affects inheritance."}
+    ]}
+  }
+]

@@ -141,6 +141,8 @@ def answer(
         yield "error", {"message": "This chat no longer exists."}
         return
     collection_id = chat["collection_id"]
+    if chat.get("source_id"):
+        source_ids = [chat["source_id"]]  # a chat about one source looks nowhere else
     history = repo_query(
         "SELECT role, content FROM messages WHERE chat_id = ? ORDER BY id DESC LIMIT ?",
         (chat_id, HISTORY_MESSAGES),
@@ -171,7 +173,9 @@ def answer(
         if show:
             meant = rewritten
         budget_chars, max_chunks = config.passage_budget()
-        passages = retrieve.search(
+        # A short source is read whole, in order; that beats picking passages from it.
+        whole = retrieve.whole_source(chat["source_id"], budget_chars) if chat.get("source_id") else None
+        passages = whole or retrieve.search(
             collection_id,
             [question, rewritten],
             services.embedder,

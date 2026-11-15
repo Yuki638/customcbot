@@ -3,6 +3,7 @@
 import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js';
 import { api, formatTime } from '/api.js';
 import { Dialog, Progress, toast } from '/components/ui.js';
+import { SourceChatDialog } from '/components/chat.js';
 
 const KIND_LABELS = { pdf: 'PDF', image: 'Image', youtube: 'YouTube', media: 'Audio/video', docx: 'Word', pptx: 'Slides', text: 'Text' };
 const ACCEPT = '.pdf,.png,.jpg,.jpeg,.webp,.bmp,.gif,.tif,.tiff,.docx,.pptx,.txt,.md,.csv,.mp3,.wav,.m4a,.ogg,.flac,.aac,.opus,.mp4,.mkv,.webm,.mov,.avi';
@@ -14,6 +15,7 @@ export function SourcesPane({ collectionId, sources, reload, excluded, setExclud
   const [rejected, setRejected] = useState([]);
   const [pasting, setPasting] = useState(false);
   const [viewing, setViewing] = useState(null);
+  const [asking, setAsking] = useState(null);
   const fileInput = useRef(null);
 
   const finish = async (result) => {
@@ -103,6 +105,9 @@ export function SourcesPane({ collectionId, sources, reload, excluded, setExclud
               <input type="checkbox" checked=${!excluded.has(source.id)} onChange=${() => toggle(source.id)}
                 title="Use this source for answers, quizzes and cards" aria-label=${`Use ${source.title}`} />`}
             <button class="title grow" onClick=${() => source.status === 'ready' && setViewing(source)} title=${source.title}>${source.title}</button>
+            ${source.status === 'ready' && html`
+              <button class="btn ghost small" onClick=${() => setAsking(source)} title="Ask questions about this source only"
+                aria-label=${`Ask about ${source.title}`}>Ask</button>`}
             <button class="btn ghost icon small" onClick=${() => remove(source)} aria-label=${`Remove ${source.title}`}>✕</button>
           </div>
           <div class="row meta">
@@ -126,6 +131,7 @@ export function SourcesPane({ collectionId, sources, reload, excluded, setExclud
 
       ${pasting && html`<${PasteDialog} collectionId=${collectionId} onClose=${() => setPasting(false)} onAdded=${reload} />`}
       ${viewing && html`<${SourceViewer} sourceId=${viewing.id} onClose=${() => setViewing(null)} />`}
+      ${asking && html`<${SourceChatDialog} source=${asking} onClose=${() => setAsking(null)} />`}
     </div>
   `;
 }

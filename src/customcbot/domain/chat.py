@@ -14,6 +14,7 @@ class ChatSession(ObjectModel):
     missing_message: ClassVar[str] = "This chat no longer exists."
 
     collection_id: int
+    source_id: int | None = None  # set when the chat is about one source only
     title: str = "New chat"
 
     def public(self) -> dict:
@@ -22,8 +23,15 @@ class ChatSession(ObjectModel):
     @staticmethod
     def list_for_collection(collection_id: int) -> list[dict]:
         return repo_query(
-            "SELECT id, title, created_at FROM chats WHERE collection_id = ? ORDER BY id DESC",
+            "SELECT id, title, created_at FROM chats WHERE collection_id = ? AND source_id IS NULL "
+            "ORDER BY id DESC",
             (collection_id,),
+        )
+
+    @staticmethod
+    def list_for_source(source_id: int) -> list[dict]:
+        return repo_query(
+            "SELECT id, title, created_at FROM chats WHERE source_id = ? ORDER BY id DESC", (source_id,)
         )
 
     @staticmethod

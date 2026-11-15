@@ -35,7 +35,9 @@ export function CitationDialog({ citation, onClose }) {
   `;
 }
 
-export function ChatTab({ collectionId, sourceIds, readyCount }) {
+export function ChatTab({ collectionId, sourceIds, readyCount, source }) {
+  // With `source`, this is a chat about that one source; otherwise about the collection.
+  const chatsPath = source ? `/api/sources/${source.id}/chats` : `/api/collections/${collectionId}/chats`;
   const [chats, setChats] = useState([]);
   const [chatId, setChatId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -55,13 +57,13 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
 
   useEffect(() => {
     let cancelled = false;
-    api.get(`/api/collections/${collectionId}/chats`).then((list) => {
+    api.get(chatsPath).then((list) => {
       if (cancelled) return;
       setChats(list);
       loadMessages(list.length ? list[0].id : null);
     }).catch((error) => toast(error.message));
     return () => { cancelled = true; if (abort.current) abort.current.abort(); };
-  }, [collectionId]);
+  }, [chatsPath]);
 
   // Follow the answer as it streams, unless the user has scrolled up to read.
   useEffect(() => {
@@ -90,13 +92,13 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
     let id = chatId;
     try {
       if (!id) {
-        const chat = await api.post(`/api/collections/${collectionId}/chats`);
+        const chat = await api.post(chatsPath);
         id = chat.id;
         setChatId(id);
       }
       setMessages((list) => [...list, { role: 'user', content: question }, { role: 'assistant', content: '', citations: [], pending: true }]);
       abort.current = new AbortController();
-      await streamChat(id, { content: question, source_ids: sourceIds, general }, (event, data) => {
+      await streamChat(id, { content: question, source_ids: source ? null : sourceIds, general: source ? false : general }, (event, data) => {
         if (event === 'sources') updateLast(() => ({ citations: data.citations }));
         else if (event === 'token') updateLast((last) => ({ content: last.content + data.text }));
         else if (event === 'done') updateLast((last) => ({ content: data.content ?? last.content, citations: data.citations, pending: false }));
@@ -108,7 +110,7 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
     }
     updateLast(() => ({ pending: false }));
     setStreaming(false);
-    api.get(`/api/collections/${collectionId}/chats`).then(setChats).catch(() => {});
+    api.get(chatsPath).then(setChats).catch(() => {});
   };
 
   const newChat = () => { if (!streaming) loadMessages(null); };
@@ -116,7 +118,7 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
   const deleteChat = async () => {
     if (!chatId || streaming || !window.confirm('Delete this conversation?')) return;
     await api.del(`/api/chats/${chatId}`).catch(() => {});
-    const list = await api.get(`/api/collections/${collectionId}/chats`).catch(() => []);
+    const list = await api.get(chatsPath).catch(() => []);
     setChats(list);
     loadMessages(list.length ? list[0].id : null);
   };
@@ -159,20 +161,23 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
         <button class="btn small" onClick=${newChat} disabled=${streaming || !chatId}>New chat</button>
         ${chatId && html`<button class="btn ghost small danger" onClick=${deleteChat} disabled=${streaming}>Delete</button>`}
         <span class="grow"></span>
-        <label class="check small" title="When off, answers come only from your material">
-          <input type="checkbox" checked=${general} onChange=${toggleGeneral} />
-          Also use general knowledge
-        </label>
+        ${!source && html`
+          <label class="check small" title="When off, answers come only from your material">
+            <input type="checkbox" checked=${general} onChange=${toggleGeneral} />
+            Also use general knowledge
+          </label>`}
       </div>
 
       <div class="messages" ref=${scroller} onScroll=${onScroll}>
         ${messages.length === 0 && html`
           <div class="empty">
-            <h2>${readyCount ? 'Ask anything about your material' : 'Add some material to get started'}</h2>
-            <p>${readyCount
-              ? 'Answers come from what you added, with links back to the exact page or moment.'
-              : 'Add a PDF, photos of your notes or a YouTube link on the left. When it says "Ready", ask away.'}</p>
-            ${readyCount > 0 && html`
+            <h2>${source ? `Ask about "${source.title}"` : readyCount ? 'Ask anything about your material' : 'Add some material to get started'}</h2>
+            <p>${source
+              ? 'Answers here come from this one source only.'
+              : readyCount
+                ? 'Answers come from what you added, with links back to the exact page or moment.'
+                : 'Add a PDF, photos of your notes or a YouTube link on the left. When it says "Ready", ask away.'}</p>
+            ${readyCount > 0 && !source && html`
               <div class="suggestions">
                 ${SUGGESTIONS.map((text) => html`<button class="btn small" onClick=${() => send(text)}>${text}</button>`)}
               </div>`}
@@ -207,7 +212,7 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
 
       <div class="composer">
         <form class="inner row" onSubmit=${(e) => { e.preventDefault(); send(); }}>
-          <textarea class="grow" rows="1" placeholder="Ask a question about your material…" aria-label="Your question"
+          <textarea class="grow" rows="1" placeholder=${source ? 'Ask a question about this source…' : 'Ask a question about your material…'} aria-label="Your question"
             value=${input} onInput=${(e) => setInput(e.target.value)} onKeyDown=${onKeyDown}></textarea>
           ${streaming
             ? html`<button type="button" class="btn" onClick=${() => abort.current && abort.current.abort()}>Stop</button>`
@@ -217,5 +222,16 @@ export function ChatTab({ collectionId, sourceIds, readyCount }) {
 
       ${opened && html`<${CitationDialog} citation=${opened} onClose=${() => setOpened(null)} />`}
     </div>
+  `;
+}
+
+// A chat about one source, opened from the sources list.
+export function SourceChatDialog({ source, onClose }) {
+  return html`
+    <${Dialog} title=${`Ask about "${source.title}"`} wide onClose=${onClose}>
+      <div class="dialog-chat">
+        <${ChatTab} collectionId=${source.collection_id} source=${source} readyCount=${1} />
+      </div>
+    <//>
   `;
 }

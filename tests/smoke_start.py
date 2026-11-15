@@ -355,6 +355,33 @@ def use(base: str, service: str) -> None:
         raise SystemExit("Saving a result as a note did not work.")
     say("Note written, glossary made and saved as a note")
 
+    # Search across everything, a thorough answer, and a chat about one source.
+    found = check(client.post(f"/api/collections/{collection}/search", json={"query": "glycolysis"}))["results"]
+    if not found or "Révision" not in json.dumps(
+        check(client.post(f"/api/collections/{collection}/search", json={"query": "Révision chapitre", "kinds": ["note"]})),
+        ensure_ascii=False,
+    ):
+        raise SystemExit(f"Search did not find the source and the note: {found}")
+    steps = []
+    with client.stream("POST", f"/api/collections/{collection}/ask", json={"question": "Where does glycolysis happen?"}) as reply:
+        for line in reply.iter_lines():
+            if line.startswith("event: "):
+                steps.append(line[7:])
+    if "error" in steps or steps[0] != "strategy" or steps[-1] != "done" or "answer" not in steps:
+        raise SystemExit(f"Ask did not run through its steps: {steps}")
+    about = check(client.post(f"/api/sources/{pdf_source['id']}/chats"))
+    cited = []
+    with client.stream("POST", f"/api/chats/{about['id']}/messages", json={"content": "What makes two ATP?"}) as reply:
+        name = None
+        for line in reply.iter_lines():
+            if line.startswith("event: "):
+                name = line[7:]
+            elif line.startswith("data: ") and name == "sources":
+                cited = json.loads(line[6:])["citations"]
+    if not cited or {c["source_id"] for c in cited} != {pdf_source["id"]}:
+        raise SystemExit(f"A chat about one source looked elsewhere: {cited}")
+    say(f"Search found {len(found)} passages; Ask and a chat about one source answered")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])

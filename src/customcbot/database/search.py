@@ -199,3 +199,44 @@ def _neighbour(row: dict) -> dict | None:
         if row[column] is not None:
             return repo_one(_SELECT + f"WHERE c.{column} = ? AND c.ord = ?", (row[column], row["ord"] + 1))
     return repo_one(_SELECT + "WHERE c.source_id = ? AND c.ord = ?", (row["source_id"], row["ord"] + 1))
+
+
+def find(
+    collection_id: int,
+    query: str,
+    embedder: Embedder,
+    *,
+    mode: str = "both",
+    kinds: tuple[str, ...] = (SOURCE, NOTE, INSIGHT),
+    limit: int = 20,
+) -> list[dict]:
+    """Passages matching a query, best first, for the Search page.
+
+    `mode` is "words" (exact words), "meaning" (similar in meaning) or "both".
+    Unlike `search`, nothing is trimmed to fit a prompt.
+    """
+    query = query.strip()
+    if not query or not kinds:
+        return []
+    by_meaning = _vector_ranking(collection_id, query, embedder, None, limit, kinds) if mode != "words" else []
+    by_words = _keyword_ranking(collection_id, query, None, limit, kinds) if mode != "meaning" else []
+    best = by_meaning[0][1] if by_meaning else 0.0
+    close = [chunk_id for chunk_id, score in by_meaning if score >= best * _RELATIVE_CUTOFF]
+    fused: dict[int, float] = {}
+    for ranking in (close, by_words):
+        for rank, chunk_id in enumerate(ranking):
+            fused[chunk_id] = fused.get(chunk_id, 0.0) + 1.0 / (_RRF_K + rank + 1)
+    ordered = sorted(fused, key=fused.get, reverse=True)[:limit]
+    if not ordered:
+        return []
+    rows = {r["id"]: r for r in _load(ordered)}
+    words = set(by_words)
+    return [{**rows[c], "matched_words": c in words} for c in ordered if c in rows]
+
+
+def whole_source(source_id: int, budget_chars: int) -> list[dict] | None:
+    """Every passage of a source in order, if together they fit in one prompt; otherwise None."""
+    rows = repo_query(_SELECT + "WHERE c.source_id = ? ORDER BY c.ord", (source_id,))
+    if not rows or sum(len(r["text"]) for r in rows) > budget_chars:
+        return None
+    return rows

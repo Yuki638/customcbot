@@ -30,7 +30,9 @@ def plain_brackets(piece: str) -> str:
 
 def normalise(text: str) -> str:
     """Rewrite the citation styles models use into the plain [2] the app understands."""
-    return _DECORATED.sub(r"[\1]", plain_brackets(text))
+    text = _DECORATED.sub(r"[\1]", plain_brackets(text))
+    # Removing a decoration can leave two spaces (or an odd narrow one) before the number.
+    return re.sub(r"[ \u00a0\u202f]{2,}(\[\d)", r" \1", text)
 
 
 # How much better another passage must score before a number is changed.

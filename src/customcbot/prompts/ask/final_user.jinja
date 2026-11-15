@@ -1,0 +1,8 @@
+Question: {{ question }}
+
+{% for answer in answers -%}
+Notes on "{{ answer.term }}":
+{{ answer.text }}
+
+{% endfor -%}
+Answer the question using only these notes, keeping the source numbers in square brackets.

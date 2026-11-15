@@ -276,3 +276,14 @@ details summary { cursor: pointer; color: var(--muted); }
 .note-row .preview { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
 .msg-actions { margin-top: 4px; }
 select.inline { width: auto; max-width: 240px; }
+
+/* Search and Ask */
+.dialog-chat { height: 65vh; display: flex; margin: -18px; }
+.dialog-chat .tab-body { flex: 1; }
+.segmented { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented button { border: 0; background: var(--surface); padding: 6px 14px; font: inherit; color: inherit; cursor: pointer; }
+.segmented button.on { background: var(--accent); color: var(--accent-text); font-weight: 600; }
+.result-row { text-align: left; cursor: pointer; width: 100%; font: inherit; color: inherit; align-items: flex-start; }
+.result-row:hover { background: var(--surface-2); }
+.result-row .snippet { display: block; margin-top: 2px; }
+.steps { border-left: 3px solid var(--border); padding-left: 12px; }

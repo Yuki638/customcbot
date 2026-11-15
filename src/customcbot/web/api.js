@@ -33,10 +33,15 @@ export const api = {
 };
 
 // Sends a chat message and calls onEvent(name, data) for each streamed event.
-export async function streamChat(chatId, body, onEvent, signal) {
+export function streamChat(chatId, body, onEvent, signal) {
+  return streamEvents(`/api/chats/${chatId}/messages`, body, onEvent, signal);
+}
+
+// Posts to a route that answers with a stream of events, and calls onEvent(name, data) for each.
+export async function streamEvents(path, body, onEvent, signal) {
   let response;
   try {
-    response = await fetch(`/api/chats/${chatId}/messages`, {
+    response = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
