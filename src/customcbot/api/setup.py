@@ -60,14 +60,19 @@ def _online(services) -> OpenAICompatLLM | None:
 @router.get("/setup")
 def status(request: Request) -> dict:
     services = request.app.state.services
+    # Read the progress first: setup marks itself done in the settings before it
+    # reports "done" here, so a reply that says done always has settings to match.
+    pull = dict(_pull_state(request))
     settings = config.public()
     local = _local(services)
     online = settings["provider"] == "online" and _online(services) is not None
     if local is not None:
         version = local.version()
+        # Ask Ollama nothing more when it is not running; each failed attempt
+        # to reach it takes a couple of seconds on Windows.
         installed = local.installed_models() if version else []
-        chat_ok = local.is_installed(settings["chat_model"])
-        local_vision = bool(settings["vision_model"]) and local.is_installed(settings["vision_model"])
+        chat_ok = bool(version) and local.is_installed(settings["chat_model"])
+        local_vision = bool(version and settings["vision_model"]) and local.is_installed(settings["vision_model"])
     else:
         version, installed, chat_ok, local_vision = "built-in test model", [], True, services.llm.has_vision()
     if online:
@@ -90,7 +95,7 @@ def status(request: Request) -> dict:
         "installed_models": installed,
         "chat_model_installed": chat_ok,
         "vision_available": vision,
-        "pull": _pull_state(request),
+        "pull": pull,
     }
 
 

@@ -225,7 +225,9 @@ def use(base: str, service: str) -> None:
             raise SystemExit(f"{response.request.method} {response.request.url} gave {response.status_code}: {response.text}")
         return response.json()
 
+    began = time.time()
     status = check(client.get("/api/setup"))
+    say(f"Status request took {time.time() - began:.1f} s (Ollama is not running here)")
     say(f"Computer as the app sees it: {status['hardware']}")
     say(f"Recommended: {status['recommended_mode']} mode, local size {status['recommended']}")
 
