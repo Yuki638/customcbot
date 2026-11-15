@@ -66,7 +66,7 @@ If the browser does not open by itself, open it and go to `http://localhost:8765
 
 **To stop the app**, close that window. **To start it again**, run the same file; later starts take a few seconds.
 
-> The start files have been tested on Linux only. If yours fails while "Installing uv", install uv yourself from [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/), then run `uv run --no-dev customcbot` in the folder.
+> The start files are run automatically on Windows, macOS and Linux test machines for every change, from a fresh download and with nothing installed. If yours still fails while "Installing uv", install uv yourself from [docs.astral.sh/uv](https://docs.astral.sh/uv/getting-started/installation/), then run `uv run --no-dev customcbot` in the folder.
 
 ## 3. Set up: choose where the AI runs
 

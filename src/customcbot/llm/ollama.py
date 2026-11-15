@@ -26,14 +26,17 @@ class OllamaLLM(LLM):
 
     # -- plumbing ---------------------------------------------------------
 
-    def _client(self, read_timeout: float = 600) -> httpx.Client:
+    def _client(self, read_timeout: float = 600, probe: bool = False) -> httpx.Client:
         url = self._base_url()
         # Ignore proxy environment variables for a server on this machine;
         # a corporate proxy setting would otherwise break the connection.
         local = (urlparse(url).hostname or "") in _LOOPBACK
+        # Windows takes about two seconds to report that nothing is listening
+        # on this machine. A running Ollama answers at once, so do not wait.
+        connect = 0.5 if probe and local else 5
         return httpx.Client(
             base_url=url,
-            timeout=httpx.Timeout(read_timeout, connect=5),
+            timeout=httpx.Timeout(read_timeout, connect=connect),
             trust_env=not local,
         )
 
@@ -42,7 +45,7 @@ class OllamaLLM(LLM):
     def version(self) -> str | None:
         """The server version, or None when Ollama is not running."""
         try:
-            with self._client(read_timeout=5) as client:
+            with self._client(read_timeout=5, probe=True) as client:
                 return client.get("/api/version").raise_for_status().json().get("version")
         except (httpx.HTTPError, ValueError):
             return None
