@@ -1,13 +1,13 @@
 // Small shared building blocks.
 
-import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js';
+import { html, t, useEffect, useRef, useState } from '/i18n.js';
 import { api } from '/api.js';
 import { onMathReady, renderMarkdown } from '/md.js';
 
 let showToast = () => {};
 
 export function toast(message) {
-  showToast(message);
+  showToast(t(message));
 }
 
 export function ToastHost() {

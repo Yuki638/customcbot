@@ -1,6 +1,6 @@
 // The list of material in a collection, and the ways to add to it.
 
-import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useRef, useState } from '/i18n.js';
 import { api, formatTime } from '/api.js';
 import { Dialog, Progress, toast } from '/components/ui.js';
 import { SourceChatDialog } from '/components/chat.js';

@@ -382,6 +382,19 @@ def use(base: str, service: str) -> None:
         raise SystemExit(f"A chat about one source looked elsewhere: {cited}")
     say(f"Search found {len(found)} passages; Ask and a chat about one source answered")
 
+    # Languages are served, and a password locks and unlocks the app.
+    spanish = client.get("/locales/es.json")
+    if spanish.status_code != 200 or "Nueva" not in spanish.json().get("+ New collection", ""):
+        raise SystemExit("The Spanish language file is not served.")
+    check(client.put("/api/auth/password", json={"new_password": "smoke-test-pw"}))
+    stranger = httpx.Client(base_url=base, timeout=60)
+    if stranger.get("/api/collections").status_code != 401:
+        raise SystemExit("A password was set, but the data is still open.")
+    check(stranger.post("/api/auth/login", json={"password": "smoke-test-pw"}))
+    check(stranger.get("/api/collections"))
+    check(client.put("/api/auth/password", json={"new_password": "", "current_password": "smoke-test-pw"}))
+    say("Language file served; password locked and unlocked the app")
+
     # A podcast episode, spoken by the real offline voices (downloaded here, about 350 MB).
     overview = next(p["id"] for p in check(client.get("/api/episode-profiles")) if p["name"] == "Quick overview")
     began = time.time()

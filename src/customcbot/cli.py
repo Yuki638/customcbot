@@ -48,7 +48,11 @@ def main() -> None:
     print(f"  Your data is stored in {config.data_dir()}")
     print("  Press Ctrl+C to stop.\n")
     if args.host not in ("127.0.0.1", "localhost"):
-        print("  Warning: there is no login. Anyone who can reach this address can use the app.\n")
+        from .api import auth
+
+        if not auth.required():
+            print("  Warning: no password is set. Anyone who can reach this address can use the app.")
+            print("  Set one in Settings, or start with CUSTOMCBOT_PASSWORD=...\n")
     if not args.no_browser:
         threading.Timer(1.0, webbrowser.open, args=(url,)).start()
     uvicorn.run(app, host=args.host, port=port, log_level="warning")

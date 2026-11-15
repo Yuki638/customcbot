@@ -1,6 +1,6 @@
 // The Search tab: find passages, or get a thorough answer built from several searches.
 
-import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useRef, useState } from '/i18n.js';
 import { api, streamEvents } from '/api.js';
 import { CitationDialog } from '/components/chat.js';
 import { Markdown, toast } from '/components/ui.js';

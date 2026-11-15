@@ -1,6 +1,7 @@
 // App shell: setup gate, collections sidebar, and the tabs of the open collection.
 
-import { html, render, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, loadLanguage, render, t, useEffect, useState } from '/i18n.js';
+import { SignIn } from '/components/auth.js';
 import { api } from '/api.js';
 import { ChatTab } from '/components/chat.js';
 import { describeMode, Settings, Setup } from '/components/setup.js';
@@ -22,11 +23,22 @@ function App() {
   const [status, setStatus] = useState(null);
   const [failed, setFailed] = useState(false);
   const [changingModel, setChangingModel] = useState(false);
+  const [locked, setLocked] = useState(false);
 
   const refresh = () => api.get('/api/setup')
     .then((next) => { setStatus(next); setFailed(false); return next; })
     .catch(() => setFailed(true));
-  useEffect(() => { refresh(); }, []);
+  useEffect(() => {
+    // With a password set, sign in before anything else is asked for.
+    api.get('/api/auth/status')
+      .then((auth) => (auth.required && !auth.signed_in ? setLocked(true) : refresh()))
+      .catch(() => setFailed(true));
+    const lock = () => setLocked(true);
+    window.addEventListener('customcbot:signin', lock);
+    return () => window.removeEventListener('customcbot:signin', lock);
+  }, []);
+
+  if (locked) return html`<${SignIn} onDone=${() => { setLocked(false); refresh(); }} />`;
 
   if (!status) {
     return html`<p class="boot">${failed ? 'Cannot reach customcbot. Is it still running?' : 'Starting…'}</p>`;
@@ -177,7 +189,7 @@ function CollectionView({ collection, tab, go, reloadCollections }) {
       <div class="tabs" role="tablist">
         <button class=${`tab only-narrow${tab === 'sources' ? ' active' : ''}`} role="tab" aria-selected=${tab === 'sources'} onClick=${() => go(collection.id, 'sources')}>Sources (${sources.length})</button>
         ${TABS.map(([id, label]) => html`
-          <button class=${`tab${tab === id ? ' active' : ''}`} role="tab" aria-selected=${tab === id} onClick=${() => go(collection.id, id)}>${label}</button>`)}
+          <button class=${`tab${tab === id ? ' active' : ''}`} role="tab" aria-selected=${tab === id} onClick=${() => go(collection.id, id)}>${t(label)}</button>`)}
       </div>
     </div>
     <div class=${`workspace tab-${tab}`}>
@@ -195,4 +207,4 @@ function CollectionView({ collection, tab, go, reloadCollections }) {
   `;
 }
 
-render(html`<${App} />`, document.getElementById('app'));
+loadLanguage().then(() => render(html`<${App} />`, document.getElementById('app')));

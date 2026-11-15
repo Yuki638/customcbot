@@ -1,6 +1,6 @@
 // The Notes tab: your own notes, and answers or results you chose to keep.
 
-import { html, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useState } from '/i18n.js';
 import { api } from '/api.js';
 import { Dialog, Markdown, toast } from '/components/ui.js';
 

@@ -1,6 +1,6 @@
 // The Podcast tab: turn your material into a spoken episode, and choose who speaks.
 
-import { html, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useState } from '/i18n.js';
 import { api, formatTime } from '/api.js';
 import { Dialog, JobProgress, toast, useJob } from '/components/ui.js';
 

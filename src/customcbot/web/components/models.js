@@ -1,6 +1,6 @@
 // "AI services and models": save several services, and choose which model does which job.
 
-import { html, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useState } from '/i18n.js';
 import { api } from '/api.js';
 import { Dialog, toast } from '/components/ui.js';
 

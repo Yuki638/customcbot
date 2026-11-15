@@ -1,6 +1,6 @@
 // The chat tab: ask questions, read streamed answers, open the cited passages.
 
-import { html, useEffect, useRef, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useRef, useState } from '/i18n.js';
 import { api, formatTime, streamChat } from '/api.js';
 import { Dialog, Markdown, toast } from '/components/ui.js';
 

@@ -1,7 +1,9 @@
 // First-run wizard and the Settings dialog.
 
-import { html, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useState } from '/i18n.js';
 import { api } from '/api.js';
+import { LANGUAGES, language, setLanguage } from '/i18n.js';
+import { PasswordSettings } from '/components/auth.js';
 import { ModelsDialog } from '/components/models.js';
 import { Dialog, Progress, toast } from '/components/ui.js';
 
@@ -379,6 +381,13 @@ export function Settings({ status, onClose, onChangeModel, refresh }) {
         <label class="field">Ollama address (leave empty for this computer)
           <input type="text" placeholder="http://127.0.0.1:11434" value=${url} onInput=${(e) => setUrl(e.target.value)} />
         </label>`}
+      <label class="field">Language of the interface
+        <select value=${language()} onChange=${(e) => setLanguage(e.target.value)}>
+          ${LANGUAGES.map(([code, name]) => html`<option value=${code} key=${code}>${name}</option>`)}
+        </select>
+        ${language() !== 'en' && html`<span class="muted small">Translated by machine and not yet checked by a native speaker. Messages from the AI service stay in English.</span>`}
+      </label>
+      <${PasswordSettings} />
       <p class="muted small">Hardware: ${describeHardware(status.hardware)}.</p>
     <//>
   `;

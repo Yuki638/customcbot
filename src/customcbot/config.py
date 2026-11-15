@@ -29,6 +29,8 @@ DEFAULTS: dict[str, Any] = {
     "api_base_url": None,
     "api_model": None,
     "api_vision": False,  # whether the online model can read images
+    "password_hash": None,  # "salt:hash" when a password is set in Settings
+    "language": None,  # interface language; None follows the browser
 }
 
 # Hosted models read far more text at once than a small local model.
@@ -53,6 +55,16 @@ def models_dir() -> Path:
     path = data_dir() / "models"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+def session_secret() -> bytes:
+    """A random value kept in the data folder, used to make sign-in cookies."""
+    path = data_dir() / "session.key"
+    if not path.exists():
+        handle = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(handle, "wb") as out:
+            out.write(os.urandom(32))
+    return path.read_bytes()
 
 
 def podcasts_dir() -> Path:
@@ -87,6 +99,7 @@ def public() -> dict[str, Any]:
     values = get_all()
     saved = models.online_credential(values["online_service"]) if values["online_service"] else None
     values["api_key_saved"] = bool(saved and saved.key())
+    del values["password_hash"]
     return values
 
 

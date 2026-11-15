@@ -288,3 +288,4 @@ select.inline { width: auto; max-width: 240px; }
 .result-row .snippet { display: block; margin-top: 2px; }
 .steps { border-left: 3px solid var(--border); padding-left: 12px; }
 a.btn { text-decoration: none; color: inherit; }
+.signin { max-width: 380px; margin: 12vh auto; }

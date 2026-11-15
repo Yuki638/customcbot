@@ -1,6 +1,6 @@
 // Summary, quiz and flashcard tabs.
 
-import { html, useEffect, useState } from '/vendor/preact-htm.js';
+import { html, useEffect, useState } from '/i18n.js';
 import { api } from '/api.js';
 import { Dialog, JobProgress, Markdown, toast, useJob } from '/components/ui.js';
 

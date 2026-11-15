@@ -19,7 +19,10 @@ from ..database.repository import (
 )
 from ..exceptions import CustomcbotError
 from ..services import Services
-from .middleware import same_origin_only
+from .middleware import password_required, same_origin_only
+from .routers import (
+    auth as auth_routes,
+)
 from .routers import (
     chat,
     collections,
@@ -41,7 +44,7 @@ from .routers import (
 )
 
 ROUTERS = (
-    setup, settings, credentials, models, collections, sources, notes, transformations, insights,
+    auth_routes, setup, settings, credentials, models, collections, sources, notes, transformations, insights,
     chat, source_chat, search, study, podcasts, speaker_profiles, episode_profiles, commands,
 )  # fmt: skip
 
@@ -70,6 +73,7 @@ def create_app(services: Services | None = None) -> FastAPI:
     app = FastAPI(title="customcbot", version=__version__, lifespan=lifespan, docs_url="/api/docs")
     app.state.services = services
 
+    app.middleware("http")(password_required)
     app.middleware("http")(same_origin_only)
 
     @app.exception_handler(CustomcbotError)

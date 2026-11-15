@@ -14,6 +14,7 @@ async function request(method, path, body) {
   } catch {
     throw new Error('Cannot reach customcbot. Is it still running?');
   }
+  if (response.status === 401) window.dispatchEvent(new Event('customcbot:signin'));
   if (!response.ok) {
     let detail = '';
     try {
@@ -51,6 +52,7 @@ export async function streamEvents(path, body, onEvent, signal) {
     if (error.name === 'AbortError') return;
     throw new Error('Cannot reach customcbot. Is it still running?');
   }
+  if (response.status === 401) window.dispatchEvent(new Event('customcbot:signin'));
   if (!response.ok) {
     let detail = '';
     try {

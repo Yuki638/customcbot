@@ -11,7 +11,7 @@ from ...exceptions import InvalidInputError
 
 router = APIRouter(prefix="/api")
 
-EDITABLE_SETTINGS = {"num_ctx", "context_chars", "whisper_model", "ollama_url", "chat_model", "vision_model"}
+EDITABLE_SETTINGS = {"num_ctx", "context_chars", "whisper_model", "ollama_url", "chat_model", "vision_model", "language"}
 
 
 class SettingsUpdate(BaseModel):
