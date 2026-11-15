@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import socket
 import threading
 import webbrowser
@@ -13,6 +14,10 @@ from . import __version__, config
 def _free_port(host: str, preferred: int) -> int:
     for port in range(preferred, preferred + 20):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+            if os.name != "nt":
+                # As the server itself does: a port the app used a moment ago counts as free.
+                # (On Windows this option would also allow a port another program is using.)
+                probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             try:
                 probe.bind((host, port))
                 return port

@@ -26,3 +26,24 @@ jobs:
       - run: uv sync
       - run: uv run ruff check .
       - run: uv run pytest -q
+
+  start-file:
+    # Runs start.bat / start.sh from a fresh copy, as someone who has just
+    # downloaded the ZIP would, and then uses the running app.
+    name: start file (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the system library the OCR package needs
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends libgl1
+      - name: Start the app like a new user, then use it
+        run: python tests/smoke_start.py --like-new-pc

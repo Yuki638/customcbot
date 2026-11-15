@@ -9,6 +9,7 @@ A local "chat with your own material" app: FastAPI backend in `src/customcbot`, 
 - Lint: `uv run ruff check .`
 - Run with the stand-in model: `CUSTOMCBOT_FAKE=1 uv run customcbot --no-browser`
 - Run for real: start Ollama, then `uv run customcbot --no-browser`
+- Start-file check, as a new user would run it (unpacks a fresh copy, runs `start.bat` or `start.sh`, uses the app, restarts it): `python tests/smoke_start.py --data-dir <empty folder>`. CI runs it on Windows, macOS and Linux with `--like-new-pc`.
 - Stand-in online service for trying the online option: `uv run python -m tests.standin 9911` (address `http://127.0.0.1:9911/v1`, key `test-key`)
 
 ## Layout
