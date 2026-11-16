@@ -42,6 +42,12 @@ def test_a_greeting_gets_a_greeting_not_a_search(client, collection):
     upload(client, collection, "cells.txt", (CELLS * 5).encode())
     ask(client, collection, "thank you")
     assert "small talk" in system_prompts(llm)[-1]
+    # A greeting that tells something and asks nothing, even if it names the subject.
+    _, _, cited, _ = ask(client, collection, "hi! I'm Yuki and my exam on mitochondria is on 12 June")
+    assert cited == [] and "small talk" in system_prompts(llm)[-1]
+    # A greeting followed by a request is a question.
+    _, _, cited, _ = ask(client, collection, "hello, explain what mitochondria do")
+    assert cited and "small talk" not in system_prompts(llm)[-1]
     # Short, but its words are in the material: that is a search.
     _, _, cited, _ = ask(client, collection, "cristae surface area")
     assert cited and "small talk" not in system_prompts(llm)[-1]
@@ -55,15 +61,15 @@ def test_without_the_companion_a_greeting_is_treated_as_before(client, collectio
 
 
 def test_memories_can_be_added_edited_and_cleared(client):
-    first = client.post("/api/memories", json={"content": "  My name is   Arjun. "}).json()
-    assert first["content"] == "My name is Arjun."
-    assert client.post("/api/memories", json={"content": "my name is arjun"}).status_code == 400  # known already
+    first = client.post("/api/memories", json={"content": "  My name is   Yuki. "}).json()
+    assert first["content"] == "My name is Yuki."
+    assert client.post("/api/memories", json={"content": "my name is yuki"}).status_code == 400  # known already
     assert client.post("/api/memories", json={"content": " "}).status_code == 400
     assert client.post("/api/memories", json={"content": "x" * 300}).status_code == 400
     client.post("/api/memories", json={"content": "Exam on 12 June."})
-    edited = client.put(f"/api/memories/{first['id']}", json={"content": "My name is Arjun Rao."}).json()
-    assert edited["content"] == "My name is Arjun Rao."
-    assert [m["content"] for m in client.get("/api/memories").json()] == ["My name is Arjun Rao.", "Exam on 12 June."]
+    edited = client.put(f"/api/memories/{first['id']}", json={"content": "My name is Yuki Sato."}).json()
+    assert edited["content"] == "My name is Yuki Sato."
+    assert [m["content"] for m in client.get("/api/memories").json()] == ["My name is Yuki Sato.", "Exam on 12 June."]
     client.delete(f"/api/memories/{first['id']}")
     assert len(client.get("/api/memories").json()) == 1
     client.delete("/api/memories")
@@ -72,13 +78,13 @@ def test_memories_can_be_added_edited_and_cleared(client):
 
 def test_what_is_remembered_reaches_the_prompt_only_while_memory_is_on(client, collection):
     upload(client, collection, "cells.txt", (CELLS * 5).encode())
-    client.post("/api/memories", json={"content": "The student's name is Arjun."})
+    client.post("/api/memories", json={"content": "The student's name is Yuki."})
     llm = client.app.state.services.llm
     ask(client, collection, "What do mitochondria produce?")
-    assert "The student's name is Arjun." in system_prompts(llm)[-1]
+    assert "The student's name is Yuki." in system_prompts(llm)[-1]
     client.put("/api/companion", json={"memory": False})
     ask(client, collection, "What do mitochondria produce?")
-    assert "Arjun" not in system_prompts(llm)[-1]
+    assert "Yuki" not in system_prompts(llm)[-1]
 
 
 def test_only_the_newest_memories_are_kept(client):

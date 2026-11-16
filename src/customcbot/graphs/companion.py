@@ -70,7 +70,11 @@ def is_small_talk(question: str, collection_id: int, has_material: bool, service
     Only a few words with no question mark can be, and only if they match nothing
     in the material: "photosynthesis" is short too, and must still be searched.
     """
-    if not active() or "?" in question or len(question.split()) > SMALL_TALK_WORDS:
+    if not active() or "?" in question:
+        return False
+    if _introduction(question):
+        return True
+    if len(question.split()) > SMALL_TALK_WORDS:
         return False
     if not has_material:
         return True
@@ -95,6 +99,33 @@ _SELF = re.compile(
     r"|मैं|मेरा|मेरी|मेरे|मुझे|我",
     re.I,
 )
+
+
+INTRODUCTION_WORDS = 20
+_GREETING = re.compile(
+    r"^\W*(hi|hey|hello|hiya|yo|good (morning|afternoon|evening)|thanks|thank you|namaste|hola|buenos|buenas"
+    r"|bonjour|salut|coucou|merci|ol[aá]|oi|obrigad[oa]|gracias|नमस्ते|你好|您好|谢谢)(?!\w)",
+    re.I,
+)
+_REQUEST = re.compile(
+    r"(?<!\w)(explain|tell|what|how|why|when|where|which|who|summari[sz]e|give|show|help|quiz|test|define"
+    r"|describe|list|compare|can you|could you|please|explica|qu[eé]|c[oó]mo|explique|pourquoi|comment"
+    r"|kya|kaise|batao|samjhao)(?!\w)",
+    re.I,
+)
+
+
+def _introduction(message: str) -> bool:
+    """ "Hi, I'm Yuki and my exam is in June": a greeting that tells something and asks nothing.
+
+    It may well name the subject, so it would otherwise be searched and answered with
+    "I could not find that". When in doubt this says no, and the message is searched as usual.
+    """
+    return (
+        len(message.split()) <= INTRODUCTION_WORDS
+        and bool(_GREETING.search(message))
+        and not _REQUEST.search(message)
+    )
 
 
 class Facts(BaseModel):

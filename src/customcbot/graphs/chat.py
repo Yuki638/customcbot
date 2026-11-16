@@ -169,6 +169,7 @@ def answer(
             messages += [{"role": m["role"], "content": m["content"][:HISTORY_CHARS]} for m in history[-PROMPT_HISTORY:]]
             messages.append({"role": "user", "content": question})
             yield from _reply(chat_id, messages, [], [], services, max_tokens=150)
+            _remember(question, services)  # an introduction is where the name and the exam date are
             return
 
     if not has_material and not general:
@@ -224,6 +225,11 @@ def answer(
     messages.append({"role": "user", "content": user})
 
     yield from _reply(chat_id, messages, passages, citations, services)
+    _remember(question, services)
+
+
+def _remember(question: str, services: Services) -> None:
+    """Have the message read, in the background, for lasting facts about the user."""
     if companion.remembers() and services.llm is None:  # not with the stand-in model
         services.worker.submit_job("remember", None, {"message": question})
 
