@@ -17,12 +17,13 @@ A "chat with your own material" app: FastAPI backend in `src/customcbot`, a no-b
 The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a lighter stack (SQLite, one process, no build step). All paths are under `src/customcbot/`.
 
 - `api/`: `main.py` builds the app, `middleware.py` checks each request, `auth.py` is the optional password, `routers/` has one file per resource, `command_service.py` submits and reads background jobs.
-- `domain/`: stored objects (`Collection`, `Source`, `Note`, `Transformation`, `SourceInsight`, `ChatSession`, `Credential`, `Model`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record such as `DefaultModels`.
+- `domain/`: stored objects (`Collection`, `Source`, `Note`, `Transformation`, `SourceInsight`, `ChatSession`, `Credential`, `Model`, `Memory`) on `ObjectModel` in `base.py`; `RecordModel` is a one-off settings record such as `DefaultModels`.
 - `database/`: `repository.py` (`repo_query`, `repo_one`, `repo_execute`), `migrate.py` and numbered files in `migrations/` (`.sql`, or `.py` with `upgrade(conn)` to move data), hybrid search in `search.py`.
 - `ai/`: model interface (`base.py`), Ollama client, client for online services (`openai_compat.py`), the list of kinds of service (`provider_registry.py`), which saved model does which job (`models.py`), ready-made clients per job (`provision.py`), embeddings, stand-in model, hardware detection, model sizes and online services (`catalog.py`).
 - `graphs/`: the multi-step workflows: `source.py` (read and index a source), `chat.py`, `ask.py` (plan searches, take notes from each, write one answer), `transformation.py` (carry out a task on a source and store the insight), `summary.py`, `quiz.py`, `flashcards.py`.
 - `commands/`: background work. `registry.py` has the `@command` decorator, `worker.py` runs commands one at a time.
 - `prompts/`: every instruction sent to the model, as Jinja templates; `utils/prompter.py` renders them.
+- The study companion: `graphs/companion.py` (her voice in chat, small talk, learning facts about the user), `domain/memory.py`, `api/routers/companion.py`, `web/components/companion.js`, built-in faces in `web/companion/`.
 - `podcasts/`: turning material into a spoken episode: `generate.py` (plan, script, record), `speech.py` (offline Kokoro voices; `FakeSpeech` for tests), `audio.py` (join lines, save MP3), `voices.py`.
 - `ingest/`: one module per kind of source (PDF, Office, images, audio and video, YouTube).
 - `utils/`: chunking, indexing notes and insights for search, citation checking, building the passage text for a prompt, key encryption.
@@ -44,6 +45,8 @@ The layers follow [open-notebook](https://github.com/lfnovo/open-notebook), on a
 - Ask numbers passages once across all its searches, so `[3]` means the same passage in the notes and in the final answer. Keep that when changing `graphs/ask.py`.
 - A chat with `source_id` set is about that one source: it looks nowhere else, and a source short enough is read whole.
 - Interface text is written in English in the components and looked up in `web/locales/<lang>.json`. Text in a template and whole phrases dropped into one are translated without any marking; other text chosen in code goes through `t('...')`. Phrases chosen in code must start with a capital letter, which is how they are told apart from class names. After adding text, run `tools/i18n_extract.py --missing`; `tests/test_i18n.py` fails when a file falls under 95%.
+- The companion changes only the tone of an answer: `companion.persona()` is added to the system prompt, and searching, citing and citation checks stay the same. It returns nothing on the Lite tier, where a tone made answers worse. A short message with no question mark that matches nothing in the material is small talk and is answered without a search.
+- Memories are facts about the user, never about the subject. `companion.learn` only reads messages that mention their writer and only keeps facts that start with "The student" and reuse the user's words. Keep those guards: without them a small model stores the lesson as a memory.
 - With a password set, every `/api/` route except `/api/auth/` needs the sign-in cookie. Never send `password_hash` to the browser.
 - Background LLM calls pass `background=True` so chat stays responsive.
 - Error messages reach end users as written; keep them plain and say what to do next.

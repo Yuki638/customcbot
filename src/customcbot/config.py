@@ -31,6 +31,9 @@ DEFAULTS: dict[str, Any] = {
     "api_vision": False,  # whether the online model can read images
     "password_hash": None,  # "salt:hash" when a password is set in Settings
     "language": None,  # interface language; None follows the browser
+    "companion": True,  # the study companion: a named character who answers and reacts
+    "companion_name": "Mio",
+    "memory": True,  # whether the companion remembers things about the user
 }
 
 # Hosted models read far more text at once than a small local model.

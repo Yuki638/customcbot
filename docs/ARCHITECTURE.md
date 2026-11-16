@@ -46,6 +46,7 @@ Models are chosen through **credentials** (a saved service, key encrypted), **mo
 | `ask` | plan a few searches, take notes from each, write one answer; passages are numbered once across all searches |
 | `transformation` | read a source whole, or reduce a long one to notes first, then carry out the task |
 | `summary`, `quiz`, `flashcards` | map over passages, then combine |
+| `companion` | adds the companion's voice to the chat prompt; answers a greeting without a search; after a chat turn, a `remember` command picks out lasting facts about the user |
 | `podcasts.generate` | collect material, outline, script part by part, record each line, join into an MP3 |
 
 ## Changing the tables

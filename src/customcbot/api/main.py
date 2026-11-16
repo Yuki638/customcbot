@@ -27,6 +27,7 @@ from .routers import (
     chat,
     collections,
     commands,
+    companion,
     credentials,
     episode_profiles,
     insights,
@@ -45,7 +46,7 @@ from .routers import (
 
 ROUTERS = (
     auth_routes, setup, settings, credentials, models, collections, sources, notes, transformations, insights,
-    chat, source_chat, search, study, podcasts, speaker_profiles, episode_profiles, commands,
+    chat, source_chat, companion, search, study, podcasts, speaker_profiles, episode_profiles, commands,
 )  # fmt: skip
 
 WEB_DIR = Path(__file__).parent.parent / "web"

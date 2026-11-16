@@ -21,6 +21,7 @@ from ..ingest import youtube
 from ..utils import citations as citation_check
 from ..utils import context
 from ..utils.prompter import load_json, render
+from . import companion
 
 if TYPE_CHECKING:
     from ..services import Services
@@ -105,7 +106,7 @@ def _keeps_the_words(question: str, rewritten: str) -> bool:
     return kept * 2 >= len(words)
 
 
-def _resolve_follow_up(collection_id, question, history, services, source_ids) -> tuple[str, bool]:
+def _resolve_follow_up(collection_id, question, history, services, source_ids, rewritten=None) -> tuple[str, bool]:
     """Return (the question in full, whether to ask the model that form).
 
     A question that already matches the material well stands on its own and is left
@@ -120,7 +121,8 @@ def _resolve_follow_up(collection_id, question, history, services, source_ids) -
     own = retrieve.best_match(collection_id, question, services.embedder, source_ids)
     if own >= SELF_CONTAINED:
         return question, False
-    rewritten = standalone_question(question, history, services)
+    if rewritten is None:  # the caller may have worked it out already
+        rewritten = standalone_question(question, history, services)
     if rewritten == question:
         return question, False
     full = retrieve.best_match(collection_id, rewritten, services.embedder, source_ids)
@@ -156,6 +158,19 @@ def answer(
     has_material = repo_one(
         "SELECT 1 AS x FROM chunks WHERE collection_id = ? LIMIT 1", (collection_id,)
     )
+    # With the companion, "hello" or "thanks" gets a friendly word back instead of a search.
+    # A short follow-up such as "go on" is not small talk: it means something in the conversation.
+    rewritten = None
+    if companion.is_small_talk(question, collection_id, bool(has_material), services, source_ids):
+        rewritten = standalone_question(question, history, services) if history else question
+        if rewritten == question:
+            yield "sources", {"citations": []}
+            messages = [{"role": "system", "content": companion.small_talk_prompt()}]
+            messages += [{"role": m["role"], "content": m["content"][:HISTORY_CHARS]} for m in history[-PROMPT_HISTORY:]]
+            messages.append({"role": "user", "content": question})
+            yield from _reply(chat_id, messages, [], [], services, max_tokens=150)
+            return
+
     if not has_material and not general:
         yield "sources", {"citations": []}
         yield "token", {"text": NOTHING_YET}
@@ -169,7 +184,7 @@ def answer(
         # A follow-up like "and the next stage?" is rewritten to stand on its own for
         # searching. The user's own words are searched too, so that a poor rewrite by
         # a small model cannot push the right passages out.
-        rewritten, show = _resolve_follow_up(collection_id, question, history, services, source_ids)
+        rewritten, show = _resolve_follow_up(collection_id, question, history, services, source_ids, rewritten)
         if show:
             meant = rewritten
         budget_chars, max_chunks = config.passage_budget()
@@ -198,7 +213,7 @@ def answer(
         system = render("chat/grounded_system")
         user = f"Sources:\n\n(no matching passages were found)\n\nQuestion: {question}"
 
-    messages = [{"role": "system", "content": system}]
+    messages = [{"role": "system", "content": system + companion.persona()}]
     if meant == question:
         # A rewritten question already carries what it needs from the conversation.
         # Repeating the earlier turns as well makes small models copy their last answer.
@@ -208,9 +223,16 @@ def answer(
         ]
     messages.append({"role": "user", "content": user})
 
+    yield from _reply(chat_id, messages, passages, citations, services)
+    if companion.remembers() and services.llm is None:  # not with the stand-in model
+        services.worker.submit_job("remember", None, {"message": question})
+
+
+def _reply(chat_id, messages, passages, citations, services, max_tokens=900) -> Iterator[tuple[str, dict]]:
+    """Stream the model's answer, then check its citations and store it."""
     parts: list[str] = []
     try:
-        for piece in services.model("chat").stream(messages, temperature=0.3, max_tokens=900):
+        for piece in services.model("chat").stream(messages, temperature=0.3, max_tokens=max_tokens):
             piece = citation_check.plain_brackets(piece)
             parts.append(piece)
             yield "token", {"text": piece}

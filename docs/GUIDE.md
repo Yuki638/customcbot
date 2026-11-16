@@ -165,6 +165,22 @@ The AI can still make mistakes. For anything important, open the citation and ch
 - **Save as note** under an answer copies it into the **Notes** tab, titled with your question.
 - **Ask** next to a source on the left opens a chat that looks only in that source. A short source is read whole, so nothing in it is missed.
 
+### Your study companion
+
+The face beside each answer is Mio, the study companion. She answers in a friendly voice, says hello back when you greet her, and looks pleased or worried in quizzes. What she tells you still comes from your material, with the same sources under each answer.
+
+Click her name at the bottom left to:
+
+- **Rename her**, or turn her off. With her off, the app looks and answers as it did before.
+- **See what she remembers about you.** When you mention your name, what you study, an exam date or a topic you find hard, she keeps it as a short line and uses it in later answers. You can add lines yourself, edit them, forget one, or forget everything. Untick "Remember things about me" to stop it.
+- **Use your own character.** The window shows a folder. Put pictures named `neutral`, `happy`, `thinking` and `sad` (PNG, JPG, WebP or GIF) in it; one picture named `neutral` is enough.
+
+Good to know:
+
+- What she remembers is kept on your computer only. To find things worth remembering, your messages that mention you ("I", "my") are read a second time by the same model that answers you. With an online service, that goes to the service too.
+- She notices facts in English, Spanish, French, Portuguese, Hindi and Chinese messages, and writes them down in English. In other languages, add them yourself.
+- With the smallest local model (Lite), she greets and reacts, but answers are worded plainly, because that model answers worse when asked for a tone as well. It also notices fewer facts.
+
 ### Search tab
 
 - **Find passages** looks through your sources, your notes and the results in the Summary tab. Choose **Words and meaning**, **Exact words only** or **Similar meaning only**, and tick what to look in. Click a result to read the passage.

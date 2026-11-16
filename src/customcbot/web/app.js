@@ -4,6 +4,7 @@ import { html, loadLanguage, render, t, useEffect, useState } from '/i18n.js';
 import { SignIn } from '/components/auth.js';
 import { api } from '/api.js';
 import { ChatTab } from '/components/chat.js';
+import { CompanionDialog, Face, loadCompanion, useCompanion } from '/components/companion.js';
 import { describeMode, Settings, Setup } from '/components/setup.js';
 import { SourcesPane } from '/components/sources.js';
 import { FlashcardsTab, QuizTab, SummaryTab } from '/components/study.js';
@@ -65,10 +66,13 @@ function Main({ status, refresh, onChangeModel }) {
   const [route, setRoute] = useState(readHash());
   const [creating, setCreating] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showCompanion, setShowCompanion] = useState(false);
+  const companion = useCompanion();
 
   const load = () => api.get('/api/collections').then((list) => { setCollections(list); return list; }).catch((error) => toast(error.message));
   useEffect(() => {
     load();
+    loadCompanion();
     const onHash = () => setRoute(readHash());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -97,6 +101,10 @@ function Main({ status, refresh, onChangeModel }) {
               <span class="name">${collection.name}</span>
             </button>`)}
         </div>
+        <button class="nav-item companion-nav" onClick=${() => setShowCompanion(true)} title="Your study companion and what it remembers about you">
+          <${Face} size=${26} />
+          <span class="name">${companion.enabled ? companion.name : t('Study companion')}</span>
+        </button>
         <button class="nav-item two-line" onClick=${() => setShowSettings(true)} title="Where answers come from. Open Settings to change it.">
           <span class="name">Settings</span>
           <span class="muted small">${describeMode(status)}</span>
@@ -118,6 +126,7 @@ function Main({ status, refresh, onChangeModel }) {
 
       ${creating && html`<${NameDialog} title="New collection" action="Create" onClose=${() => setCreating(false)}
         onSubmit=${async (name) => { const made = await api.post('/api/collections', { name }); await load(); go(made.id); }} />`}
+      ${showCompanion && html`<${CompanionDialog} onClose=${() => setShowCompanion(false)} />`}
       ${showSettings && html`<${Settings} status=${status} refresh=${refresh} onClose=${() => setShowSettings(false)}
         onChangeModel=${() => { setShowSettings(false); onChangeModel(); }} />`}
     </div>

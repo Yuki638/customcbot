@@ -1,8 +1,9 @@
 // The chat tab: ask questions, read streamed answers, open the cited passages.
 
-import { html, useEffect, useRef, useState } from '/i18n.js';
+import { html, t, useEffect, useRef, useState } from '/i18n.js';
 import { api, formatTime, streamChat } from '/api.js';
 import { Dialog, Markdown, toast } from '/components/ui.js';
+import { Face, useCompanion } from '/components/companion.js';
 
 const SUGGESTIONS = [
   'Summarise the main ideas',
@@ -48,6 +49,7 @@ export function ChatTab({ collectionId, sourceIds, readyCount, source }) {
   const scroller = useRef(null);
   const abort = useRef(null);
   const stick = useRef(true);
+  const companion = useCompanion();
 
   const loadMessages = async (id) => {
     setChatId(id);
@@ -171,6 +173,8 @@ export function ChatTab({ collectionId, sourceIds, readyCount, source }) {
       <div class="messages" ref=${scroller} onScroll=${onScroll}>
         ${messages.length === 0 && html`
           <div class="empty">
+            ${!source && html`<${Face} mood="happy" size=${112} />`}
+            ${companion.enabled && !source && html`<p class="hello">${t("Hi, I'm {name}. What do you want to learn?", { name: companion.name })}</p>`}
             <h2>${source ? `Ask about "${source.title}"` : readyCount ? 'Ask anything about your material' : 'Add some material to get started'}</h2>
             <p>${source
               ? 'Answers here come from this one source only.'
@@ -186,7 +190,8 @@ export function ChatTab({ collectionId, sourceIds, readyCount, source }) {
         ${messages.map((message, index) => message.role === 'user'
           ? html`<div class="msg user" key=${index}><div class="bubble">${message.content}</div></div>`
           : html`
-            <div class="msg assistant" key=${index}>
+            <div class=${`msg assistant${companion.enabled ? ' with-face' : ''}`} key=${index}>
+              <${Face} mood=${message.error ? 'sad' : message.pending ? 'thinking' : 'neutral'} />
               <div class="bubble">
                 ${message.pending && !message.content && html`<span class="thinking">Reading your material…</span>`}
                 <${Markdown} text=${message.content} citations=${message.citations || []}

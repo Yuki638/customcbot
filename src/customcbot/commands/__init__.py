@@ -1,6 +1,7 @@
 """Background commands. A module must be imported here for its commands to exist."""
 
 from . import (  # noqa: F401
+    companion_commands,
     podcast_commands,
     source_commands,
     study_commands,

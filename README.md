@@ -23,6 +23,7 @@ You choose on first start and can switch at any time.
 - **Tasks on a source.** Key points, a glossary, revision questions or a plain-language explanation of any source, or tasks you write yourself.
 - **Search and Ask in depth.** Find passages by exact words or by meaning. For a harder question, the AI plans several searches, takes notes from each and writes one answer.
 - **Podcasts.** Turn your material into a spoken episode with one to four voices, to listen to instead of reading. The voices run on your computer.
+- **A study companion.** Mio, a character with her own face and a friendly voice, answers your questions, reacts in quizzes and remembers things like your name and your exam date. Rename her, swap in your own pictures, or turn her off.
 - **Several AI services at once.** Use one model for chat, another for quizzes and summaries, and a third to read handwriting.
 - **Six interface languages**, and an optional password if you open the app to other devices.
 
@@ -34,6 +35,7 @@ It is built for studying but works for anything you want to ask questions about:
 | ![A glossary made from one source](docs/summary.png) | ![The text read from a photographed note](docs/extracted-text.png) |
 | ![An answer built from several searches](docs/ask.png) | ![A podcast episode with its script](docs/podcast.png) |
 | ![Notes, including a saved answer](docs/notes.png) | ![A model for each kind of work](docs/models.png) |
+| ![Mio, the study companion, answering in chat](docs/companion.png) | ![Mio reacting to a quiz answer](docs/companion-quiz.png) |
 
 ## Get started
 
@@ -136,6 +138,8 @@ Small models running on a home computer are slower and less capable than large o
 **With an online service**, the question you ask and the passages found for it are also sent to the service you chose, each time you chat or make a summary, quiz or flashcards. Your key is stored in the data folder on your computer and is never shown again in the browser.
 
 **Podcast voices** run on your computer in both cases: the script is written by the AI you chose, but the speech is made locally and no audio is sent anywhere.
+
+**What the study companion remembers about you** is kept in the data folder on your computer. To notice those facts, messages in which you mention yourself are read once more by the model that answers you; with an online service, that request goes to the service as well. Turn memory off under the companion's name at the bottom left.
 
 **Saved keys** are encrypted in the data folder. **A password** is optional; set one in Settings if other devices can reach the app.
 

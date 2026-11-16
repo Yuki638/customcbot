@@ -289,3 +289,14 @@ select.inline { width: auto; max-width: 240px; }
 .steps { border-left: 3px solid var(--border); padding-left: 12px; }
 a.btn { text-decoration: none; color: inherit; }
 .signin { max-width: 380px; margin: 12vh auto; }
+
+/* The study companion */
+.face { border-radius: 50%; flex: none; background: var(--accent-soft); object-fit: cover; }
+.msg.assistant.with-face { display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.msg.assistant.with-face > :not(.face) { grid-column: 2; }
+.empty .face { margin-bottom: 10px; }
+.empty .hello { color: var(--text); font-size: 16px; margin-bottom: 4px; }
+.banner.feedback { display: flex; gap: 10px; align-items: flex-start; }
+.companion-nav { display: flex; align-items: center; gap: 8px; }
+.companion-card { align-items: center; gap: 14px; }
+.companion-card form { align-items: flex-end; }

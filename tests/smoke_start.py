@@ -395,6 +395,29 @@ def use(base: str, service: str) -> None:
     check(client.put("/api/auth/password", json={"new_password": "", "current_password": "smoke-test-pw"}))
     say("Language file served; password locked and unlocked the app")
 
+    # The study companion: its pictures, a greeting, and what it remembers.
+    companion = check(client.get("/api/companion"))
+    for mood in ("neutral", "happy", "thinking", "sad"):
+        picture = client.get(f"/api/companion/face/{mood}")
+        if picture.status_code != 200 or b"<svg" not in picture.content:
+            raise SystemExit(f"The companion's {mood} picture is not served.")
+    greeting_chat = check(client.post(f"/api/collections/{collection}/chats"))["id"]
+    greeting, cited = "", None
+    with client.stream("POST", f"/api/chats/{greeting_chat}/messages", json={"content": "hello"}) as stream:
+        for line in stream.iter_lines():
+            if line.startswith("event: "):
+                event = line[7:]
+            elif line.startswith("data: ") and event == "done":
+                done = json.loads(line[6:])
+                greeting, cited = done["content"], done["citations"]
+    if not greeting or cited:
+        raise SystemExit(f"A greeting was not answered as one: {greeting!r} {cited}")
+    remembered = check(client.post("/api/memories", json={"content": "The exam is on 12 June."}))
+    if [m["id"] for m in check(client.get("/api/memories")) if m["content"] == "The exam is on 12 June."] != [remembered["id"]]:
+        raise SystemExit("A memory was not stored.")
+    check(client.delete("/api/memories"))
+    say(f"{companion['name']} has her pictures, answered a greeting and kept a memory")
+
     # A podcast episode, spoken by the real offline voices (downloaded here, about 350 MB).
     overview = next(p["id"] for p in check(client.get("/api/episode-profiles")) if p["name"] == "Quick overview")
     began = time.time()

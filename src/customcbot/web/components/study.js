@@ -3,6 +3,7 @@
 import { html, useEffect, useState } from '/i18n.js';
 import { api } from '/api.js';
 import { Dialog, JobProgress, Markdown, toast, useJob } from '/components/ui.js';
+import { Face } from '/components/companion.js';
 
 function NeedsMaterial() {
   return html`
@@ -239,6 +240,7 @@ function QuizRunner({ quiz, onExit }) {
     const missed = quiz.questions.filter((q) => !results[q.id].correct);
     return html`
       <div class="card stack center">
+        <div><${Face} mood=${missed.length <= total / 2 ? 'happy' : 'sad'} size=${72} /></div>
         <h2>You got ${right} of ${total}</h2>
         <p class="muted">${right === total ? 'Perfect score.' : missed.length <= total / 2 ? 'Good work. Review the ones you missed below.' : 'Worth another look at the material, then try again.'}</p>
         <div class="row" style="justify-content: center">
@@ -301,10 +303,13 @@ function QuizRunner({ quiz, onExit }) {
               <button class="btn ghost" disabled=${grading} onClick=${() => record({ correct: false, feedback: 'Skipped.' })}>I don't know</button>
             </div>`}`}
         ${result && html`
-          <div class=${`banner ${result.correct ? 'ok' : 'err'}`}>
-            <strong>${result.correct ? 'Correct.' : 'Not quite.'}</strong>
-            ${' '}${question.type === 'mcq' ? question.explanation : result.feedback}
-            ${question.type === 'short' && html`<div style="margin-top: 4px">Reference answer: ${question.answer}</div>`}
+          <div class=${`banner feedback ${result.correct ? 'ok' : 'err'}`}>
+            <${Face} mood=${result.correct ? 'happy' : 'sad'} size=${40} />
+            <div>
+              <strong>${result.correct ? "That's right." : 'Not quite.'}</strong>
+              ${' '}${question.type === 'mcq' ? question.explanation : result.feedback}
+              ${question.type === 'short' && html`<div style="margin-top: 4px">Reference answer: ${question.answer}</div>`}
+            </div>
           </div>
           <div class="row">
             <span class="muted small grow">From ${question.where}</span>

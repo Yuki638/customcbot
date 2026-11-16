@@ -4,6 +4,7 @@ from .base import ObjectModel, RecordModel
 from .chat import ChatSession
 from .collection import Collection
 from .credential import Credential
+from .memory import Memory
 from .model import DefaultModels, Model
 from .note import Note
 from .podcast import EpisodeProfile, PodcastEpisode, SpeakerProfile
@@ -16,6 +17,7 @@ __all__ = [
     "Credential",
     "DefaultModels",
     "EpisodeProfile",
+    "Memory",
     "Model",
     "Note",
     "ObjectModel",

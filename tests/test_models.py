@@ -67,6 +67,8 @@ def test_chat_and_study_tools_can_use_different_services(online_client, service,
     assert {r["model"] for r in service.requests} == {"big-llama-3.3-70b"}
     assert second_service.requests == []  # chat did not touch the second service
 
+    wait(online_client)  # the companion reads the message for things to remember, with the chat model
+    assert second_service.requests == []
     service.requests.clear()
     job = online_client.post(f"/api/collections/{collection}/flashcards", json={"count": 2}).json()
     wait(online_client)
